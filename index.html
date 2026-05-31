@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="東洋医学の弁証鑑別・治療穴・徒手検査・カルテ管理を行う学習・臨床補助ツール">
+<meta name="theme-color" content="#7a5c3e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="弁証支援">
+<title>東洋医学 弁証支援アプリ</title>
+<style>
+  :root{
+    --bg:#f5f3ee; --panel:#fffdf8; --ink:#2c2620; --sub:#6b6256;
+    --line:#ddd5c7; --accent:#7a5c3e; --accent2:#9c7a4f;
+    --pos:#b4452f; --neg:#3f6b52; --chip:#efe9dc; --hi:#f6efe0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,system-ui,sans-serif;
+    line-height:1.7;-webkit-text-size-adjust:100%}
+  .wrap{max-width:880px;margin:0 auto;padding:18px 16px 80px}
+  header{padding:20px 0 10px;border-bottom:2px solid var(--accent)}
+  h1{font-size:1.35rem;margin:0;letter-spacing:.04em}
+  .lead{color:var(--sub);font-size:.86rem;margin:6px 0 0}
+  .disclaimer{background:var(--hi);border:1px solid var(--line);border-radius:10px;
+    padding:10px 14px;font-size:.8rem;color:var(--sub);margin:14px 0}
+  .tabs{display:flex;gap:6px;margin:18px 0 14px;flex-wrap:wrap}
+  .tab{flex:1;min-width:96px;padding:10px 6px;text-align:center;border:1px solid var(--line);
+    background:var(--panel);border-radius:10px;cursor:pointer;font-size:.82rem;color:var(--sub);
+    user-select:none;transition:.15s}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+  .tab .n{display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--chip);
+    color:var(--accent);align-items:center;justify-content:center;font-size:.72rem;margin-right:5px;font-weight:700}
+  .tab.active .n{background:#fff}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:18px 16px;margin-bottom:16px;display:none}
+  section.show{display:block}
+  h2{font-size:1.05rem;margin:0 0 4px;color:var(--accent)}
+  .h2sub{color:var(--sub);font-size:.8rem;margin:0 0 14px}
+  .grp{margin:16px 0}
+  .grp>.gh{font-weight:700;font-size:.92rem;margin:0 0 8px;padding-left:8px;border-left:4px solid var(--accent2)}
+  .qs{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+  label.chk{display:flex;align-items:flex-start;gap:8px;padding:9px 11px;border:1px solid var(--line);
+    border-radius:9px;background:#fff;cursor:pointer;font-size:.84rem;transition:.12s}
+  label.chk:hover{border-color:var(--accent2)}
+  label.chk input{margin-top:3px;accent-color:var(--accent)}
+  label.chk.on{background:var(--hi);border-color:var(--accent)}
+  .free{margin:14px 0 4px}
+  .free textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:9px;
+    padding:10px;font-size:.86rem;font-family:inherit;resize:vertical;background:#fff}
+  .pt-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px}
+  .pt-row label{font-size:.78rem;color:var(--sub);display:block}
+  .pt-row input{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;
+    font-size:.9rem;font-family:inherit;background:#fff;margin-top:3px}
+  .pt-row input:focus{outline:2px solid var(--accent2);outline-offset:-1px}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  button{font-family:inherit;font-size:.9rem;padding:11px 18px;border-radius:10px;border:none;
+    cursor:pointer;font-weight:600;transition:.15s}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:#634a31}
+  .btn-ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+  .btn-ghost:hover{background:var(--hi)}
+  .btn-save{background:var(--neg);color:#fff}
+  .btn-save:hover{filter:brightness(.92)}
+  .result-card{border:1px solid var(--line);border-radius:12px;padding:14px 15px;margin-bottom:12px;background:#fff}
+  .result-card .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .pat-name{font-size:1.08rem;font-weight:700;color:var(--ink)}
+  .score{font-size:.78rem;color:var(--sub)}
+  .meter{height:8px;background:var(--chip);border-radius:5px;overflow:hidden;margin:8px 0 10px}
+  .meter>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent))}
+  .matched{font-size:.8rem;color:var(--sub);margin:0 0 8px}
+  .matched b{color:var(--accent)}
+  .tx{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+  .acu{display:inline-flex;align-items:center;gap:5px;background:var(--chip);border-radius:7px;
+    padding:4px 9px;font-size:.8rem}
+  .acu .mode{font-size:.7rem;padding:1px 6px;border-radius:5px;color:#fff}
+  .m-bu{background:var(--neg)} .m-sha{background:var(--pos)} .m-hei{background:var(--accent2)}
+  .princ{font-size:.83rem;color:var(--sub);margin:6px 0 0}
+  .empty{color:var(--sub);font-size:.85rem;padding:10px;text-align:center}
+  .test-flow{border:1px solid var(--line);border-radius:12px;padding:0;margin-bottom:12px;background:#fff;overflow:hidden}
+  .test-flow .tf-head{background:var(--hi);padding:10px 14px;font-weight:700;font-size:.92rem;cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center}
+  .test-flow .tf-body{padding:12px 14px;display:none;border-top:1px solid var(--line)}
+  .test-flow.open .tf-body{display:block}
+  .test-flow .tf-head .reg{font-size:.74rem;color:var(--sub);font-weight:400}
+  .tnode{margin:6px 0;font-size:.84rem}
+  .tnode .tname{font-weight:600}
+  .tnode .desc{color:var(--sub);font-size:.79rem;margin:2px 0 0}
+  .tnode label.chk{margin-top:4px;display:inline-flex}
+  .branch{margin:8px 0 8px 6px;padding-left:12px;border-left:2px solid var(--line)}
+  .arrow{color:var(--accent);font-weight:700;margin:0 4px}
+  .tag-pos{color:var(--pos);font-weight:700}
+  .tag-neg{color:var(--neg);font-weight:700}
+  .concl{background:var(--hi);border-radius:8px;padding:8px 11px;font-size:.83rem;margin-top:6px}
+  .concl b{color:var(--accent)}
+  .legend{font-size:.74rem;color:var(--sub);display:flex;gap:14px;flex-wrap:wrap;margin:4px 0 14px}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+  footer{text-align:center;color:var(--sub);font-size:.74rem;margin-top:30px}
+  /* カルテ */
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  .toolbar input.search{flex:1;min-width:160px;padding:10px 12px;border:1px solid var(--line);
+    border-radius:9px;font-size:.9rem;font-family:inherit;background:#fff}
+  .rec{border:1px solid var(--line);border-radius:11px;margin-bottom:10px;background:#fff;overflow:hidden}
+  .rec .rh{padding:11px 14px;cursor:pointer;display:flex;justify-content:space-between;
+    align-items:center;gap:8px;flex-wrap:wrap}
+  .rec .rh:hover{background:var(--hi)}
+  .rec .pid{font-weight:700;color:var(--accent);font-size:.86rem}
+  .rec .pname{font-weight:600}
+  .rec .pdate{font-size:.76rem;color:var(--sub)}
+  .rec .visits{font-size:.74rem;background:var(--chip);border-radius:20px;padding:2px 10px;color:var(--accent)}
+  .rec .rbody{display:none;border-top:1px solid var(--line);padding:6px 14px 12px}
+  .rec.open .rbody{display:block}
+  .visit{border-left:3px solid var(--accent2);padding:8px 12px;margin:10px 0;background:var(--hi);border-radius:0 8px 8px 0}
+  .visit .vd{font-size:.78rem;color:var(--sub);font-weight:700;margin-bottom:4px}
+  .visit .vline{font-size:.82rem;margin:3px 0}
+  .visit .vline b{color:var(--accent)}
+  .pre{white-space:pre-wrap}
+  .vhist{font-size:.72rem;color:var(--sub);margin-top:6px;padding-top:5px;border-top:1px dashed var(--line)}
+  .vedit{margin-top:6px}
+  .vedit label{font-size:.76rem;color:var(--sub);display:block;margin:6px 0 2px}
+  .vedit input,.vedit textarea{width:100%;border:1px solid var(--line);border-radius:7px;
+    padding:7px 9px;font-size:.84rem;font-family:inherit;background:#fff}
+  .vedit textarea{min-height:54px;resize:vertical}
+  .mini{font-size:.78rem;padding:6px 12px}
+  .info{background:var(--hi);border:1px solid var(--line);border-radius:10px;padding:10px 13px;font-size:.8rem;color:var(--sub);margin-bottom:12px}
+  .info b{color:var(--accent)}
+  .pill{display:inline-block;background:var(--chip);border-radius:20px;padding:3px 11px;font-size:.76rem;color:var(--accent);margin:2px 4px 2px 0}
+  @media(max-width:520px){.qs{grid-template-columns:1fr 1fr}.pt-row{grid-template-columns:1fr}}
+  /* 印刷 */
+  @media print{
+    .tabs,.bar,.toolbar,.disclaimer,footer,.no-print{display:none!important}
+    section{display:block!important;border:none;box-shadow:none;page-break-inside:avoid}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>東洋医学 弁証支援アプリ</h1>
+  <p class="lead">問診 → 症状入力 → 弁証鑑別 → 治療穴 → 徒手検査 → カルテ保存・検索</p>
+</header>
+
+<div class="disclaimer">
+  ⚠ 本アプリは学習・臨床補助のための<b>鑑別支援ツール</b>です。表示される弁証・治療穴・検査は候補であり確定診断ではありません。最終判断は施術者ご自身が行ってください。
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-name="intake"><span class="n">1</span>問診</div>
+  <div class="tab" data-name="symptom"><span class="n">2</span>症状</div>
+  <div class="tab" data-name="test"><span class="n">3</span>徒手検査</div>
+  <div class="tab" data-name="diag"><span class="n">4</span>弁証</div>
+  <div class="tab" data-name="chart"><span class="n">5</span>カルテ</div>
+</div>
+
+<!-- ============ STEP 1 問診 ============ -->
+<section class="show" id="sec0" data-name="intake">
+  <h2>① 問診表</h2>
+  <p class="h2sub">患者情報と主訴を記入してください。患者番号は同一患者の時系列管理に使います。</p>
+  <div class="pt-row">
+    <div><label>患者番号 <span style="color:var(--pos)">*</span></label><input id="p_id" placeholder="例：00123" oninput="onPidInput()" list="pidList"><datalist id="pidList"></datalist></div>
+    <div><label>氏名 <span style="color:var(--pos)">*</span></label><input id="p_name" placeholder="例：山田 太郎" oninput="onNameInput()" list="nameList"><datalist id="nameList"></datalist></div>
+    <div><label>来院日</label><input id="p_date" type="date"></div>
+  </div>
+  <div class="pt-row">
+    <div><label>予約時間</label><input id="p_resv" type="time" step="600"></div>
+    <div><label>来院時間</label><input id="p_arr" type="time" step="600"></div>
+    <div></div>
+  </div>
+  <p id="matchInfo" class="h2sub" style="margin:0 0 6px;min-height:1em"></p>
+  <div class="free">
+    <div class="gh" style="font-weight:700;margin-bottom:6px">主訴（一番つらい症状）</div>
+    <textarea id="q_chief" placeholder="例：1週間前から右の腰が痛い。前かがみで悪化する。"></textarea>
+  </div>
+  <div class="free">
+    <div class="gh" style="font-weight:700;margin:14px 0 6px">経過・きっかけ・随伴症状</div>
+    <textarea id="q_hist" placeholder="例：冷えると悪化、疲れやすい、食欲不振、夜間の頻尿あり など"></textarea>
+  </div>
+  <div class="bar">
+    <button class="btn-primary" onclick="go('symptom')">症状入力へ →</button>
+    <button class="btn-ghost" onclick="newChart()">新規カルテ（入力クリア）</button>
+    <button class="btn-ghost" onclick="printIntakeForm()">🖨 患者用問診表を印刷/PDF</button>
+  </div>
+  <p class="h2sub" style="margin-top:8px">「患者用問診表」は患者さんに記入していただく空欄の用紙を印刷・PDF出力します（この入力欄とは別物です）。</p>
+</section>
+
+<!-- ============ STEP 2 症状 ============ -->
+<section id="sec1" data-name="symptom">
+  <h2>② 症状入力</h2>
+  <p class="h2sub">該当する症状にチェックしてください。チェックが多いほど精度が上がります。痛みの部位を選ぶと、次の徒手検査でテストが提示されます。</p>
+  <div id="symptomArea"></div>
+  <div class="bar">
+    <button class="btn-primary" onclick="toTests()">徒手検査へ →</button>
+    <button class="btn-ghost" onclick="clearAll()">症状クリア</button>
+  </div>
+</section>
+
+<!-- ============ STEP 3 弁証 ============ -->
+<section id="sec2" data-name="diag">
+  <h2>④ 弁証・治療方針</h2>
+  <p class="h2sub">入力症状から可能性の高い証を順に表示します。治療穴は補瀉の目安つき。</p>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--neg)"></i>補＝補う・温める</span>
+    <span><i class="dot" style="background:var(--pos)"></i>瀉＝散らす・瀉す</span>
+    <span><i class="dot" style="background:var(--accent2)"></i>平補平瀉</span>
+  </div>
+  <div id="resultArea"><p class="empty">症状入力後、徒手検査タブを経てここで弁証が表示されます。「再計算」でも更新できます。</p></div>
+  <div class="bar" style="margin-top:10px">
+    <button class="btn-ghost mini" onclick="analyze()">↻ 弁証を再計算</button>
+  </div>
+
+  <div class="free" style="margin-top:18px">
+    <div class="gh" style="font-weight:700;margin-bottom:6px">治療内容（実施した処置を記録）</div>
+    <textarea id="q_tx" style="min-height:110px" placeholder="例：神庭に寸2・5番鍼を1㎝直刺、5分置鍼後に抜鍼。&#10;　　足三里(左右)に灸3壮。委中に置鍼10分。"></textarea>
+    <p class="h2sub" style="margin:4px 0 0">使用経穴・鍼の規格・刺入深度・手技（補瀉）・置鍼時間・灸の壮数などを自由に記入できます。</p>
+  </div>
+  <div class="free" style="margin-top:10px">
+    <div class="gh" style="font-weight:700;margin-bottom:6px">施術後の様子・次回の予定</div>
+    <textarea id="q_after" placeholder="例：施術後、前屈時痛が軽減。次回は灸を追加予定。"></textarea>
+  </div>
+  <div class="bar">
+    <button class="btn-save" onclick="saveChart()">💾 このカルテを保存</button>
+    <button class="btn-ghost" onclick="go('symptom')">← 症状を修正</button>
+    <button class="btn-ghost" onclick="go('chart')">カルテ一覧へ →</button>
+  </div>
+</section>
+
+<!-- ============ STEP 4 徒手検査 ============ -->
+<section id="sec3" data-name="test">
+  <h2>③ 徒手検査フロー</h2>
+  <p class="h2sub">入力した部位から行うべき整形外科テストと判定の流れを提示します。実施した所見にチェックすると、カルテに記録されます。</p>
+  <div id="testArea"><p class="empty">先に症状入力で痛みの部位を選んでください。</p></div>
+  <div class="free" style="margin-top:14px">
+    <div class="gh" style="font-weight:700;margin-bottom:6px">所見・経過メモ（任意）</div>
+    <textarea id="q_memo" placeholder="例：SLR右70°陽性。L5領域に放散。"></textarea>
+  </div>
+  <div class="bar">
+    <button class="btn-primary" onclick="analyze()">弁証へ →</button>
+    <button class="btn-ghost" onclick="go('symptom')">← 症状を修正</button>
+  </div>
+</section>
+
+<!-- ============ STEP 5 カルテ ============ -->
+<section id="sec4" data-name="chart">
+  <h2>⑤ カルテ検索・管理</h2>
+  <p class="h2sub">患者番号・氏名で検索できます。同じ患者番号は来院日順（時系列）にまとまります。</p>
+  <div class="info" id="storeInfo"></div>
+  <div class="toolbar">
+    <input class="search" id="searchBox" placeholder="患者番号・氏名で検索" oninput="renderCharts()">
+    <button class="btn-ghost mini" onclick="exportJSON()">⬇ バックアップ(JSON)</button>
+    <button class="btn-ghost mini" onclick="document.getElementById('importFile').click()">⬆ 読込(JSON)</button>
+    <button class="btn-ghost mini" onclick="exportCSV()">CSV出力</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+  </div>
+  <div id="chartList"></div>
+</section>
+
+<footer>東洋医学 弁証支援アプリ ／ 学習・臨床補助用途。診断・治療の最終判断は施術者が行ってください。</footer>
+</div>
+
+<script>
+/* ============================================================
+   症状マスタ
+   ============================================================ */
+const SYMPTOM_GROUPS = [
+  {g:"全身・寒熱", items:[
+    ["cold","寒がり・冷えを感じる"],["heat","ほてり・のぼせ"],
+    ["fatigue","疲れやすい・倦怠感"],["lowvoice","声に力がない・話すのが億劫"],
+    ["fever_pm","夕方〜夜の微熱・手足のほてり"],["sweat_spont","じっとしていても汗が出る(自汗)"],
+    ["sweat_night","寝汗(盗汗)"],["thirst_cold","冷たい物を欲しがる・口渇強い"],
+    ["nothirst","口は渇かない・温かい物を好む"],["heavy","体が重だるい"],
+  ]},
+  {g:"精神・睡眠", items:[
+    ["insomnia","寝つけない・眠りが浅い"],["dream","夢が多い"],
+    ["palpitation","動悸"],["anxiety","不安・驚きやすい"],
+    ["irritable","イライラ・怒りっぽい"],["depress","気分が落ち込む・ため息"],
+    ["dizziness","めまい・立ちくらみ"],["forget","物忘れ"],
+  ]},
+  {g:"頭・顔・目", items:[
+    ["headache","頭痛"],["eye_dry","目の乾き・かすみ"],
+    ["eye_red","目の充血"],["facepale","顔色が白い・つやがない"],
+    ["facered","顔が赤い"],["tinnitus","耳鳴り"],
+  ]},
+  {g:"消化・腹部", items:[
+    ["appetite_lo","食欲不振"],["bloat","お腹の張り・ゲップ"],
+    ["loose","軟便・下痢"],["constip","便秘"],
+    ["nausea","吐き気・むかつき"],["epi_cold","みぞおち・お腹を温めると楽"],
+    ["sticky_mouth","口の中が粘る・甘い"],
+  ]},
+  {g:"呼吸・胸", items:[
+    ["cough","咳"],["phlegm","痰が多い"],
+    ["sob","息切れ・呼吸が浅い"],["chest_op","胸が詰まる・脇が張る"],
+  ]},
+  {g:"泌尿・生殖・腰", items:[
+    ["urine_freq","頻尿・夜間尿"],["urine_clear","尿が薄く量が多い"],
+    ["urine_yellow","尿が濃い・少ない・残尿感"],["lowback_weak","腰や膝がだるい・力が入らない"],
+    ["lowback_cold","腰が冷えて痛む"],["libido_lo","性欲減退・むくみ"],
+  ]},
+  {g:"血・婦人", items:[
+    ["blood_dark","経血やあざが暗紫・塊"],["fixed_pain","刺すような固定痛"],
+    ["dysmen","生理痛が強い"],["palered","唇・爪が白い"],
+    ["skin_dry","肌や髪が乾燥・つやがない"],
+  ]},
+  {g:"舌・脈(分かれば)", items:[
+    ["tongue_pale","舌が淡い"],["tongue_red","舌が赤い"],
+    ["tongue_purple","舌が暗紫・瘀点"],["coat_white","白い苔"],
+    ["coat_yellow","黄色い苔"],["coat_thick","苔が厚い・べたつく"],
+    ["coat_none","苔が少ない・無い"],["pulse_weak","脈が弱い・沈む"],
+    ["pulse_rapid","脈が速い"],["pulse_wiry","脈が張る(弦)"],["pulse_slip","脈が滑(なめらか)"],
+  ]},
+  {g:"痛みの部位(徒手検査用)", items:[
+    ["pain_neck","首・肩のこり/痛み"],["pain_shoulder","肩関節の痛み・挙上制限"],
+    ["pain_elbow","肘の痛み"],["pain_wrist","手首・指のしびれ/痛み"],
+    ["pain_lowback","腰痛"],["pain_hip","股関節・殿部の痛み"],
+    ["pain_knee","膝の痛み"],["pain_leg_numb","下肢のしびれ・放散痛"],
+  ]},
+];
+
+const PATTERNS = [
+  {name:"気虚証", cat:"気血津液",
+   sym:{fatigue:3,lowvoice:2,sob:2,sweat_spont:2,appetite_lo:1,facepale:1,pulse_weak:2,tongue_pale:1},
+   princ:"補気・健脾。気を補い臓腑の機能を高める。",
+   tx:[{p:"足三里",m:"bu"},{p:"気海",m:"bu"},{p:"関元",m:"bu"},{p:"脾兪",m:"bu"},{p:"膏肓",m:"bu"}]},
+  {name:"血虚証", cat:"気血津液",
+   sym:{palered:3,skin_dry:2,dizziness:2,palpitation:2,insomnia:1,forget:1,eye_dry:1,tongue_pale:2,pulse_weak:1},
+   princ:"補血・養血。血を補い心肝を養う。",
+   tx:[{p:"血海",m:"bu"},{p:"三陰交",m:"bu"},{p:"膈兪",m:"bu"},{p:"肝兪",m:"bu"},{p:"脾兪",m:"bu"}]},
+  {name:"気滞証(肝気鬱結)", cat:"気血津液",
+   sym:{chest_op:3,irritable:2,depress:2,bloat:2,dysmen:1,pulse_wiry:2,headache:1},
+   princ:"疏肝理気。気の巡りを通し鬱滞を散らす。",
+   tx:[{p:"太衝",m:"sha"},{p:"期門",m:"sha"},{p:"膻中",m:"hei"},{p:"内関",m:"hei"},{p:"陽陵泉",m:"sha"}]},
+  {name:"血瘀証", cat:"気血津液",
+   sym:{fixed_pain:3,blood_dark:3,tongue_purple:3,pulse_wiry:1,dysmen:1,headache:1},
+   princ:"活血化瘀。滞った血を巡らせ瘀血を除く。",
+   tx:[{p:"血海",m:"sha"},{p:"膈兪",m:"sha"},{p:"三陰交",m:"hei"},{p:"合谷",m:"sha"},{p:"太衝",m:"sha"}]},
+  {name:"陽虚証", cat:"八綱",
+   sym:{cold:3,lowback_cold:2,urine_clear:2,loose:2,facepale:1,libido_lo:2,epi_cold:2,nothirst:1,pulse_weak:2,tongue_pale:1},
+   princ:"温陽・補腎。陽気を温め補い冷えを除く。灸を主体に。",
+   tx:[{p:"関元",m:"bu"},{p:"命門",m:"bu"},{p:"腎兪",m:"bu"},{p:"気海",m:"bu"},{p:"足三里",m:"bu"}]},
+  {name:"陰虚証", cat:"八綱",
+   sym:{fever_pm:3,sweat_night:3,heat:2,eye_dry:1,thirst_cold:1,coat_none:2,tongue_red:2,pulse_rapid:1,insomnia:1,tinnitus:1},
+   princ:"滋陰・清虚熱。陰液を補い虚熱を鎮める。",
+   tx:[{p:"三陰交",m:"bu"},{p:"太渓",m:"bu"},{p:"照海",m:"bu"},{p:"復溜",m:"bu"},{p:"腎兪",m:"bu"}]},
+  {name:"実熱証", cat:"八綱",
+   sym:{heat:2,facered:2,eye_red:2,thirst_cold:2,constip:2,urine_yellow:2,coat_yellow:2,tongue_red:2,pulse_rapid:2,irritable:1},
+   princ:"清熱瀉火。熱邪を清し瀉す。",
+   tx:[{p:"曲池",m:"sha"},{p:"合谷",m:"sha"},{p:"大椎",m:"sha"},{p:"内庭",m:"sha"},{p:"少商",m:"sha"}]},
+  {name:"痰湿証(痰飲)", cat:"気血津液",
+   sym:{heavy:2,phlegm:3,sticky_mouth:2,nausea:2,coat_thick:3,pulse_slip:2,dizziness:1,sob:1,bloat:1},
+   princ:"化痰除湿・健脾。痰湿を取り除き脾を健やかに。",
+   tx:[{p:"豊隆",m:"sha"},{p:"中脘",m:"hei"},{p:"陰陵泉",m:"sha"},{p:"足三里",m:"hei"},{p:"脾兪",m:"bu"}]},
+  {name:"脾気虚(脾胃虚弱)", cat:"臓腑",
+   sym:{appetite_lo:3,loose:3,fatigue:2,bloat:2,facepale:1,heavy:1,lowvoice:1,tongue_pale:1,pulse_weak:1},
+   princ:"健脾益気。脾の運化を高め気を補う。",
+   tx:[{p:"足三里",m:"bu"},{p:"脾兪",m:"bu"},{p:"中脘",m:"bu"},{p:"章門",m:"bu"},{p:"胃兪",m:"bu"}]},
+  {name:"腎陽虚", cat:"臓腑",
+   sym:{lowback_cold:3,lowback_weak:2,urine_freq:2,urine_clear:2,libido_lo:2,cold:2,loose:1,pulse_weak:1,tongue_pale:1},
+   princ:"温補腎陽。腎の陽気を温め補う。灸主体。",
+   tx:[{p:"命門",m:"bu"},{p:"腎兪",m:"bu"},{p:"関元",m:"bu"},{p:"太渓",m:"bu"},{p:"気海",m:"bu"}]},
+  {name:"腎陰虚", cat:"臓腑",
+   sym:{lowback_weak:2,tinnitus:2,fever_pm:2,sweat_night:2,dizziness:1,eye_dry:1,coat_none:2,tongue_red:1,pulse_rapid:1,forget:1},
+   princ:"滋補腎陰。腎陰を養い虚火を鎮める。",
+   tx:[{p:"太渓",m:"bu"},{p:"腎兪",m:"bu"},{p:"三陰交",m:"bu"},{p:"照海",m:"bu"},{p:"志室",m:"bu"}]},
+  {name:"肝陽上亢", cat:"臓腑",
+   sym:{headache:2,dizziness:2,irritable:2,eye_red:1,facered:1,tinnitus:1,pulse_wiry:2,tongue_red:1,insomnia:1},
+   princ:"平肝潜陽。上亢した肝陽を鎮め降ろす。",
+   tx:[{p:"太衝",m:"sha"},{p:"風池",m:"sha"},{p:"行間",m:"sha"},{p:"太渓",m:"bu"},{p:"百会",m:"hei"}]},
+  {name:"心血虚(心神不安)", cat:"臓腑",
+   sym:{palpitation:3,insomnia:3,dream:2,anxiety:2,forget:2,palered:1,dizziness:1,tongue_pale:1,pulse_weak:1},
+   princ:"養心安神・補血。心血を補い神を安んじる。",
+   tx:[{p:"神門",m:"bu"},{p:"内関",m:"hei"},{p:"心兪",m:"bu"},{p:"三陰交",m:"bu"},{p:"百会",m:"hei"}]},
+  {name:"肺気虚", cat:"臓腑",
+   sym:{cough:2,sob:3,lowvoice:2,sweat_spont:2,fatigue:2,phlegm:1,facepale:1,pulse_weak:1},
+   princ:"補益肺気。肺気を補い衛気を固める。",
+   tx:[{p:"肺兪",m:"bu"},{p:"太淵",m:"bu"},{p:"足三里",m:"bu"},{p:"気海",m:"bu"},{p:"膏肓",m:"bu"}]},
+];
+
+const MERIDIAN = {
+  pain_neck:{m:"督脈・足太陽膀胱経・手少陽三焦経",tx:[{p:"風池",m:"sha"},{p:"天柱",m:"sha"},{p:"肩井",m:"sha"},{p:"後渓",m:"sha"}]},
+  pain_shoulder:{m:"手陽明大腸経・手太陽小腸経",tx:[{p:"肩髃",m:"hei"},{p:"肩髎",m:"hei"},{p:"臑兪",m:"sha"},{p:"曲池",m:"hei"}]},
+  pain_lowback:{m:"足太陽膀胱経・督脈",tx:[{p:"腎兪",m:"hei"},{p:"大腸兪",m:"hei"},{p:"委中",m:"sha"},{p:"腰陽関",m:"hei"}]},
+  pain_knee:{m:"足陽明胃経・足太陰脾経",tx:[{p:"内膝眼",m:"hei"},{p:"犢鼻",m:"hei"},{p:"陽陵泉",m:"hei"},{p:"梁丘",m:"hei"}]},
+  pain_leg_numb:{m:"足太陽膀胱経・足少陽胆経",tx:[{p:"環跳",m:"sha"},{p:"委中",m:"sha"},{p:"承山",m:"sha"},{p:"陽陵泉",m:"sha"}]},
+};
+
+const TEST_FLOWS = [
+  {trig:"pain_neck", region:"頸部・上肢", title:"頸部痛・上肢症状",
+   tests:[
+    {id:"spurling",name:"Spurlingテスト(椎間孔圧迫)", desc:"頭部を患側へ側屈・伸展し軸圧を加える"},
+    {id:"jackson",name:"Jacksonテスト", desc:"頭部を後屈させ軸圧を加える"},
+   ],
+   branch:[
+    {cond:"Spurling <span class='tag-pos'>陽性</span>（上肢に放散痛）", concl:"頸椎症性神経根症 / 椎間孔狭窄の可能性"},
+    {cond:"両テスト <span class='tag-neg'>陰性</span>・こり主体", concl:"筋筋膜性頸部痛・緊張型の可能性（経絡弁証へ）"},
+   ]},
+  {trig:"pain_shoulder", region:"肩関節", title:"肩関節痛・挙上制限",
+   tests:[
+    {id:"arc",name:"Painful arc(有痛弧)", desc:"外転60〜120°で痛み"},
+    {id:"emptycan",name:"Empty can(SSP)テスト", desc:"内旋位で挙上に抵抗"},
+    {id:"droparm",name:"Drop armテスト", desc:"挙上位から自力でゆっくり下ろせるか"},
+   ],
+   branch:[
+    {cond:"Painful arc <span class='tag-pos'>陽性</span> ＋ Empty can <span class='tag-pos'>陽性</span>", concl:"棘上筋腱炎・腱板損傷の可能性"},
+    {cond:"Drop arm <span class='tag-pos'>陽性</span>", concl:"腱板断裂の可能性（要医療連携）"},
+    {cond:"全方向の他動制限 ＋ テスト <span class='tag-neg'>陰性</span>", concl:"凍結肩(五十肩)の可能性"},
+   ]},
+  {trig:"pain_elbow", region:"肘", title:"肘の痛み",
+   tests:[
+    {id:"thomsen",name:"Thomsenテスト", desc:"手関節背屈に抵抗（外側上顆）"},
+    {id:"midfinger",name:"中指伸展テスト", desc:"中指伸展に抵抗"},
+   ],
+   branch:[
+    {cond:"外側で <span class='tag-pos'>陽性</span>", concl:"上腕骨外側上顆炎(テニス肘)の可能性"},
+    {cond:"内側で誘発", concl:"内側上顆炎(ゴルフ肘)の可能性"},
+   ]},
+  {trig:"pain_wrist", region:"手首・手指", title:"手首・指のしびれ/痛み",
+   tests:[
+    {id:"phalen",name:"Phalenテスト", desc:"手関節を最大屈曲し1分保持"},
+    {id:"tinel",name:"Tinel徴候", desc:"手根管部を叩打"},
+    {id:"finkel",name:"Finkelsteinテスト", desc:"母指を握り尺屈"},
+   ],
+   branch:[
+    {cond:"Phalen/Tinel <span class='tag-pos'>陽性</span>（正中神経領域のしびれ）", concl:"手根管症候群の可能性"},
+    {cond:"Finkelstein <span class='tag-pos'>陽性</span>", concl:"de Quervain腱鞘炎の可能性"},
+   ]},
+  {trig:"pain_lowback", region:"腰部", title:"腰痛",
+   tests:[
+    {id:"slr",name:"SLR(下肢伸展挙上)", desc:"仰臥位で下肢を挙上、70°以下で放散痛"},
+    {id:"kemp",name:"Kempテスト", desc:"立位で後屈＋側屈・回旋"},
+    {id:"patrick",name:"Patrick(FABER)テスト", desc:"股関節を屈曲外転外旋"},
+   ],
+   branch:[
+    {cond:"SLR <span class='tag-pos'>陽性</span>（下肢へ放散）", concl:"腰椎椎間板ヘルニア・坐骨神経痛の可能性"},
+    {cond:"Kemp <span class='tag-pos'>陽性</span>・後屈で増悪", concl:"椎間関節性・脊柱管狭窄の可能性"},
+    {cond:"Patrick <span class='tag-pos'>陽性</span>", concl:"仙腸関節・股関節由来の可能性"},
+    {cond:"全テスト <span class='tag-neg'>陰性</span>", concl:"筋筋膜性腰痛の可能性（経絡弁証へ）"},
+   ]},
+  {trig:"pain_hip", region:"股関節・殿部", title:"股関節・殿部痛",
+   tests:[
+    {id:"patrick2",name:"Patrick(FABER)テスト", desc:"屈曲外転外旋で誘発"},
+    {id:"freiberg",name:"Freibergテスト", desc:"股関節内旋で殿部痛（梨状筋）"},
+   ],
+   branch:[
+    {cond:"Patrick <span class='tag-pos'>陽性</span>（鼡径部痛）", concl:"股関節症・仙腸関節障害の可能性"},
+    {cond:"Freiberg <span class='tag-pos'>陽性</span>（殿部〜下肢痛）", concl:"梨状筋症候群の可能性"},
+   ]},
+  {trig:"pain_knee", region:"膝", title:"膝の痛み",
+   tests:[
+    {id:"mcmurray",name:"McMurrayテスト", desc:"屈曲位から回旋伸展（半月板）"},
+    {id:"adt",name:"前方引き出しテスト", desc:"脛骨を前方へ（ACL）"},
+    {id:"varus",name:"内外反ストレステスト", desc:"側方動揺（側副靱帯）"},
+   ],
+   branch:[
+    {cond:"McMurray <span class='tag-pos'>陽性</span>（クリック・痛み）", concl:"半月板損傷の可能性"},
+    {cond:"前方引き出し <span class='tag-pos'>陽性</span>", concl:"前十字靱帯損傷の可能性（要医療連携）"},
+    {cond:"加齢・荷重時痛・テスト <span class='tag-neg'>陰性</span>", concl:"変形性膝関節症の可能性"},
+   ]},
+  {trig:"pain_leg_numb", region:"下肢", title:"下肢のしびれ・放散痛",
+   tests:[
+    {id:"slr2",name:"SLRテスト", desc:"L4-S1神経根の評価"},
+    {id:"fnst",name:"大腿神経伸展テスト(FNST)", desc:"腹臥位で膝屈曲（L2-4）"},
+   ],
+   branch:[
+    {cond:"SLR <span class='tag-pos'>陽性</span>", concl:"L4-S1神経根症・坐骨神経痛の可能性"},
+    {cond:"FNST <span class='tag-pos'>陽性</span>", concl:"上位腰椎(L2-4)神経根症の可能性"},
+   ]},
+];
+
+const MODE_LABEL={bu:"補",sha:"瀉",hei:"平"};
+const LABELMAP={}; SYMPTOM_GROUPS.forEach(g=>g.items.forEach(([k,l])=>LABELMAP[k]=l));
+const STORE_KEY="tcm_charts_v1";
+let lastResult=null; // 直近の弁証結果を保持
+
+/* ============================================================
+   ストレージ抽象（localStorage が使えない環境ではメモリ保持）
+   ============================================================ */
+let memStore=null, storageMode="local";
+function loadAll(){
+  if(memStore!==null) return memStore;
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    const data=raw?JSON.parse(raw):[];
+    return data;
+  }catch(e){ storageMode="memory"; if(memStore===null)memStore=[]; return memStore; }
+}
+function saveAll(data){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    storageMode="local";
+  }catch(e){ storageMode="memory"; memStore=data; }
+}
+
+/* ============================================================
+   画面描画
+   ============================================================ */
+function buildSymptoms(){
+  const area=document.getElementById('symptomArea');
+  area.innerHTML=SYMPTOM_GROUPS.map(grp=>{
+    const items=grp.items.map(([k,l])=>
+      `<label class="chk"><input type="checkbox" value="${k}" onchange="this.closest('label').classList.toggle('on',this.checked)"><span>${l}</span></label>`
+    ).join('');
+    return `<div class="grp"><div class="gh">${grp.g}</div><div class="qs">${items}</div></div>`;
+  }).join('');
+}
+function getChecked(){return [...document.querySelectorAll('#symptomArea input:checked')].map(i=>i.value);}
+
+function scorePatterns(checkedSet){
+  return PATTERNS.map(p=>{
+    let s=0,max=0,hit=[];
+    for(const[k,w]of Object.entries(p.sym)){max+=w; if(checkedSet.has(k)){s+=w;hit.push(k);}}
+    return {p,score:s,ratio:max?s/max:0,hit};
+  }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||b.ratio-a.ratio);
+}
+
+function analyze(){
+  const checked=new Set(getChecked());
+  if(checked.size===0){alert('症状を1つ以上選択してください。');return;}
+  const scored=scorePatterns(checked);
+  const area=document.getElementById('resultArea');
+  if(scored.length===0){
+    area.innerHTML='<p class="empty">該当する証が見つかりませんでした。症状を追加してください。</p>';
+  }else{
+    const top=scored.slice(0,4), maxScore=top[0].score;
+    area.innerHTML=top.map((x,i)=>{
+      const pct=Math.round(x.ratio*100), rel=Math.round(x.score/maxScore*100);
+      const hits=x.hit.map(k=>LABELMAP[k]).join('・');
+      const acu=x.p.tx.map(t=>`<span class="acu">${t.p}<span class="mode m-${t.m}">${MODE_LABEL[t.m]}</span></span>`).join('');
+      return `<div class="result-card"><div class="top"><span class="pat-name">${i+1}. ${x.p.name}</span>
+        <span class="score">${x.p.cat}弁証 ／ 合致度 ${pct}%</span></div>
+        <div class="meter"><i style="width:${rel}%"></i></div>
+        <div class="matched">合致した症状：<b>${hits}</b></div>
+        <div class="princ">▸ 治法：${x.p.princ}</div><div class="tx">${acu}</div></div>`;
+    }).join('');
+    const merBlocks=[...checked].filter(k=>MERIDIAN[k]).map(k=>{
+      const m=MERIDIAN[k];
+      const acu=m.tx.map(t=>`<span class="acu">${t.p}<span class="mode m-${t.m}">${MODE_LABEL[t.m]}</span></span>`).join('');
+      return `<div class="result-card" style="border-left:4px solid var(--accent2)">
+        <div class="top"><span class="pat-name">経絡弁証：${LABELMAP[k]}</span><span class="score">関連経絡</span></div>
+        <div class="matched">${m.m}</div><div class="tx">${acu}</div></div>`;
+    }).join('');
+    if(merBlocks) area.innerHTML+=`<div style="margin-top:6px;font-weight:700;color:var(--accent);font-size:.9rem">― 局所・経絡からのアプローチ ―</div>`+merBlocks;
+  }
+  lastResult=scored.slice(0,4).map(x=>({name:x.p.name,cat:x.p.cat,pct:Math.round(x.ratio*100)}));
+  buildTests(checked);
+  go('diag');
+}
+
+/* 症状→徒手検査：テストを構築してから検査タブへ */
+function toTests(){
+  const checked=new Set(getChecked());
+  if(checked.size===0){alert('症状を1つ以上選択してください。');return;}
+  buildTests(checked);
+  go('test');
+}
+
+function buildTests(checked){
+  const area=document.getElementById('testArea');
+  const flows=TEST_FLOWS.filter(f=>checked.has(f.trig));
+  if(flows.length===0){
+    area.innerHTML='<p class="empty">徒手検査の対象部位が未選択です。「痛みの部位」をチェックすると検査フローが表示されます。</p>';
+    return;
+  }
+  area.innerHTML=flows.map((f,idx)=>{
+    const tests=f.tests.map(t=>
+      `<div class="tnode"><span class="tname">・${t.name}</span><div class="desc">${t.desc}</div>
+        <label class="chk" style="margin-top:5px"><input type="checkbox" class="findchk" data-test="${t.name}"
+          onchange="this.closest('label').classList.toggle('on',this.checked)"><span>このテスト陽性</span></label></div>`).join('');
+    const branch=f.branch.map(b=>
+      `<div class="branch"><span class="arrow">→</span>${b.cond}<div class="concl"><b>結論候補：</b>${b.concl}</div></div>`).join('');
+    return `<div class="test-flow ${idx===0?'open':''}">
+      <div class="tf-head" onclick="this.parentElement.classList.toggle('open')">
+        <span>${LABELMAP[f.trig]} ＜${f.title}＞</span><span class="reg">${f.region} ▾</span></div>
+      <div class="tf-body">
+        <div style="font-weight:700;font-size:.84rem;margin-bottom:4px">A症状 → 行うテスト（陽性所見にチェック）</div>
+        ${tests}
+        <div style="font-weight:700;font-size:.84rem;margin:10px 0 2px">判定の分岐</div>
+        ${branch}</div></div>`;
+  }).join('');
+}
+function getFindings(){return [...document.querySelectorAll('.findchk:checked')].map(i=>i.dataset.test);}
+
+function clearAll(){document.querySelectorAll('#symptomArea input:checked').forEach(i=>{i.checked=false;i.closest('label').classList.remove('on');});}
+
+function newChart(){
+  ['p_id','p_name','p_resv','p_arr','q_chief','q_hist','q_tx','q_after','q_memo'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('p_date').value=new Date().toISOString().slice(0,10);
+  setMatchInfo('');
+  clearAll(); lastResult=null;
+  document.getElementById('resultArea').innerHTML='<p class="empty">症状入力後、徒手検査タブを経てここで弁証が表示されます。「再計算」でも更新できます。</p>';
+  document.getElementById('testArea').innerHTML='<p class="empty">先に症状入力で痛みの部位を選んでください。</p>';
+  go('intake');
+}
+
+/* ============================================================
+   カルテ保存
+   ============================================================ */
+function saveChart(){
+  const rawid=document.getElementById('p_id').value.trim();
+  const pid=normId(rawid);
+  if(!pid){alert('患者番号を入力してください（問診タブ）。');go('intake');return;}
+  const pname=document.getElementById('p_name').value.trim();
+  if(!pname){alert('氏名を入力してください（問診タブ）。');go('intake');document.getElementById('p_name').focus();return;}
+  const now=new Date().toISOString();
+  const visit={
+    vid: 'v'+Date.now().toString(36)+Math.random().toString(36).slice(2,8),
+    date: document.getElementById('p_date').value || new Date().toISOString().slice(0,10),
+    resvTime: document.getElementById('p_resv').value.trim(),
+    arrTime: document.getElementById('p_arr').value.trim(),
+    chief: document.getElementById('q_chief').value.trim(),
+    hist: document.getElementById('q_hist').value.trim(),
+    symptoms: getChecked().map(k=>LABELMAP[k]),
+    patterns: lastResult || [],
+    findings: getFindings(),
+    treatment: document.getElementById('q_tx').value.trim(),
+    after: document.getElementById('q_after').value.trim(),
+    memo: document.getElementById('q_memo').value.trim(),
+    savedAt: now,
+    history: [{t:now,kind:'作成'}],
+  };
+  const data=loadAll();
+  let pt=data.find(p=>normId(p.pid)===pid);
+  if(!pt){pt={pid,name:pname,visits:[]};data.push(pt);}
+  else{pt.name=pname;} // 氏名は最新の入力で更新
+  pt.visits.push(visit);
+  pt.visits.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  saveAll(data);
+  refreshDatalists();
+  alert(`患者番号 ${pid} のカルテを保存しました（来院記録 ${pt.visits.length}件目）。`);
+  renderCharts(); go('chart');
+}
+
+function renderCharts(){
+  const data=loadAll();
+  const info=document.getElementById('storeInfo');
+  info.innerHTML = storageMode==="local"
+    ? `保存件数：<b>${data.length}名</b>／この端末のブラウザに保存されています。`
+    : `⚠ このプレビュー環境ではブラウザ保存が無効のため<b>一時メモリ保存</b>です。ファイルをダウンロードしてご自身のPCで開くと永続保存できます。現在 <b>${data.length}名</b> 保持中。`;
+  const qraw=document.getElementById('searchBox').value.trim();
+  const q=qraw.toLowerCase();
+  const qid=normId(qraw).toLowerCase();
+  const list=document.getElementById('chartList');
+  const filtered=data.filter(p=>!q || (qid && normId(p.pid).toLowerCase().includes(qid)) || (p.name||'').toLowerCase().includes(q))
+    .sort((a,b)=>{const la=a.visits.at(-1)?.date||'',lb=b.visits.at(-1)?.date||'';return lb.localeCompare(la);});
+  if(filtered.length===0){list.innerHTML='<p class="empty">該当するカルテはありません。</p>';return;}
+  list.innerHTML=filtered.map(p=>{
+    const last=p.visits.at(-1)?.date||'-';
+    const pidEsc=esc(p.pid);
+    const visits=p.visits.map((v,vi)=>{
+      const key=normId(p.pid)+'|'+vi;
+      // 編集モードならフォームを描画
+      if(editingKey===key){
+        const ta=(val)=>esc(val||'');
+        return `<div class="visit"><div class="vedit">
+          <div class="vd">📅 ${fmtDate(v.date)} の記録を編集</div>
+          <label>来院日</label><input type="date" id="e_date" value="${v.date||''}">
+          <div style="display:flex;gap:8px">
+            <div style="flex:1"><label>予約時間</label><input id="e_resv" type="time" step="600" value="${ta(v.resvTime)}"></div>
+            <div style="flex:1"><label>来院時間</label><input id="e_arr" type="time" step="600" value="${ta(v.arrTime)}"></div>
+          </div>
+          <label>主訴</label><input id="e_chief" value="${ta(v.chief)}">
+          <label>治療内容</label><textarea id="e_tx">${ta(v.treatment)}</textarea>
+          <label>施術後・次回予定</label><textarea id="e_after">${ta(v.after)}</textarea>
+          <label>所見・経過メモ</label><textarea id="e_memo">${ta(v.memo)}</textarea>
+          <div class="bar" style="margin-top:8px">
+            <button class="btn-save mini" onclick="saveVisitEdit('${pidEsc}',${vi})">保存</button>
+            <button class="btn-ghost mini" onclick="cancelEdit()">キャンセル</button>
+          </div>
+          <div class="vhist">${(v.history||[]).map(hh=>fmtStamp(hh.t,hh.kind)).filter(Boolean).join('、')}</div>
+        </div></div>`;
+      }
+      const pat=v.patterns.map(x=>`<span class="pill">${x.name} ${x.pct}%</span>`).join('')||'<span class="pdate">（弁証記録なし）</span>';
+      const find=v.findings.length?`<div class="vline"><b>陽性所見：</b>${v.findings.join('、')}</div>`:'';
+      const sym=v.symptoms.length?`<div class="vline"><b>症状：</b>${v.symptoms.join('・')}</div>`:'';
+      const time=(v.resvTime||v.arrTime)?`<div class="vline"><b>予約／来院：</b>${esc(v.resvTime||'-')} ／ ${esc(v.arrTime||'-')}</div>`:'';
+      const tx=v.treatment?`<div class="vline"><b>治療内容：</b><span class="pre">${esc(v.treatment)}</span></div>`:'';
+      const after=v.after?`<div class="vline"><b>施術後・次回予定：</b><span class="pre">${esc(v.after)}</span></div>`:'';
+      const hist=(v.history&&v.history.length)
+        ? `<div class="vhist">${v.history.map(hh=>fmtStamp(hh.t,hh.kind)).filter(Boolean).join('、')}</div>` : '';
+      return `<div class="visit"><div class="vd">📅 ${fmtDate(v.date)}</div>
+        ${time}
+        ${v.chief?`<div class="vline"><b>主訴：</b>${esc(v.chief)}</div>`:''}
+        ${sym}<div class="vline"><b>弁証：</b>${pat}</div>${find}${tx}${after}
+        ${v.memo?`<div class="vline"><b>メモ：</b>${esc(v.memo)}</div>`:''}
+        ${hist}
+        <div class="bar" style="margin-top:6px"><button class="btn-ghost mini" onclick="editVisit('${pidEsc}',${vi})">✎ この記録を編集</button></div>
+        </div>`;
+    }).join('');
+    const isOpen=(editingKey&&editingKey.startsWith(normId(p.pid)+'|'))||openPids.has(normId(p.pid));
+    return `<div class="rec${isOpen?' open':''}"><div class="rh" onclick="toggleRec(this,'${pidEsc}')">
+      <span><span class="pid">No.${pidEsc}</span> <span class="pname">${esc(p.name||'（氏名未登録）')}</span></span>
+      <span><span class="visits">来院 ${p.visits.length}回</span> <span class="pdate">最終 ${fmtDate(last)} ▾</span></span></div>
+      <div class="rbody">${visits}
+        <div class="bar"><button class="btn-ghost mini" onclick="printPatient('${pidEsc}')">🖨 このカルテを印刷/PDF</button>
+        <button class="btn-ghost mini" onclick="loadToForm('${pidEsc}')">📋 直近を入力欄に呼出</button></div>
+      </div></div>`;
+  }).join('');
+}
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+/* 患者番号の正規化：全角英数字→半角、空白除去（１２３＝123） */
+function normId(s){
+  return (s||'')
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
+    .replace(/\s+/g,'')
+    .trim();
+}
+/* 氏名の正規化：全角/半角/無しの空白を同一視（山田 太郎＝山田　太郎＝山田太郎） */
+function normName(s){
+  return (s||'').replace(/[\s\u3000]+/g,'').trim();
+}
+/* YYYY-MM-DD → "YYYY-MM-DD（火）" のように曜日を付与 */
+const WD=['日','月','火','水','木','金','土'];
+function fmtDate(d){
+  if(!d) return '-';
+  const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d);
+  if(!m) return d;
+  const dt=new Date(+m[1],+m[2]-1,+m[3]);
+  if(isNaN(dt)) return d;
+  return `${d}（${WD[dt.getDay()]}）`;
+}
+/* 履歴用：ISO文字列 + 種別 → "5/31　14:49作成" の形式 */
+function fmtStamp(iso,kind){
+  const dt=new Date(iso);
+  if(isNaN(dt)) return '';
+  const z=n=>String(n).padStart(2,'0');
+  return `${dt.getMonth()+1}/${dt.getDate()}　${z(dt.getHours())}:${z(dt.getMinutes())}${kind}`;
+}
+
+/* ============================================================
+   来院記録の編集
+   ============================================================ */
+function findPt(pid){return loadAll().find(p=>normId(p.pid)===normId(pid));}
+
+/* ============================================================
+   患者番号 ⇄ 氏名 の自動補完
+   ============================================================ */
+let pidEdited=false, nameEdited=false; // どちらを手入力中か
+function setMatchInfo(msg){const el=document.getElementById('matchInfo');if(el)el.textContent=msg||'';}
+
+function onPidInput(){
+  pidEdited=true; nameEdited=false;
+  const raw=document.getElementById('p_id').value;
+  const nameEl=document.getElementById('p_name');
+  if(!raw.trim()){setMatchInfo('');return;}
+  const p=findPt(raw);
+  if(p && p.name){
+    nameEl.value=p.name;
+    setMatchInfo(`登録済み患者：No.${p.pid}「${p.name}」（来院 ${p.visits.length}回）`);
+  }else if(p){
+    setMatchInfo(`登録済み患者：No.${p.pid}（氏名未登録）`);
+  }else{
+    // 未登録番号。直前に自動補完した氏名が残っていれば消す
+    setMatchInfo('新規の患者番号です。');
+  }
+}
+
+function onNameInput(){
+  nameEdited=true; pidEdited=false;
+  const nm=document.getElementById('p_name').value.trim();
+  const idEl=document.getElementById('p_id');
+  if(!nm){setMatchInfo('');return;}
+  const matches=loadAll().filter(p=>normName(p.name)===normName(nm));
+  if(matches.length===1){
+    idEl.value=matches[0].pid;
+    setMatchInfo(`登録済み患者：No.${matches[0].pid}「${matches[0].name}」（来院 ${matches[0].visits.length}回）`);
+  }else if(matches.length>1){
+    setMatchInfo(`同名の患者が${matches.length}名います（No.${matches.map(m=>m.pid).join('・')}）。患者番号を選んでください。`);
+  }else{
+    setMatchInfo('新規の氏名です。');
+  }
+}
+
+/* 入力候補（datalist）を最新のカルテから作る */
+function refreshDatalists(){
+  const data=loadAll();
+  const pl=document.getElementById('pidList');
+  const nl=document.getElementById('nameList');
+  if(pl)pl.innerHTML=data.map(p=>`<option value="${esc(p.pid)}">${esc(p.name||'')}</option>`).join('');
+  if(nl){
+    const names=[...new Set(data.map(p=>(p.name||'').trim()).filter(Boolean))];
+    nl.innerHTML=names.map(n=>`<option value="${esc(n)}"></option>`).join('');
+  }
+}
+
+/* 編集状態とカード開閉状態をグローバルに保持 */
+let editingKey=null;            // "正規化pid|vi" を編集中
+const openPids=new Set();       // 開いている患者カード（正規化pid）
+
+function toggleRec(headerEl,pid){
+  const np=normId(pid);
+  if(openPids.has(np))openPids.delete(np); else openPids.add(np);
+  headerEl.parentElement.classList.toggle('open');
+}
+
+function editVisit(pid,vi){
+  const np=normId(pid);
+  openPids.add(np);            // カードを開いた状態に
+  editingKey=np+'|'+vi;        // 編集モードへ
+  renderCharts();
+}
+
+function cancelEdit(){
+  editingKey=null;
+  renderCharts();
+}
+
+function saveVisitEdit(pid,vi){
+  const data=loadAll();
+  const p=data.find(x=>normId(x.pid)===normId(pid)); if(!p)return;
+  const v=p.visits[vi]; if(!v)return;
+  const g=id=>document.getElementById(id);
+  if(g('e_date')) v.date=g('e_date').value||v.date;
+  if(g('e_resv')) v.resvTime=g('e_resv').value.trim();
+  if(g('e_arr')) v.arrTime=g('e_arr').value.trim();
+  if(g('e_chief')) v.chief=g('e_chief').value.trim();
+  if(g('e_tx')) v.treatment=g('e_tx').value.trim();
+  if(g('e_after')) v.after=g('e_after').value.trim();
+  if(g('e_memo')) v.memo=g('e_memo').value.trim();
+  if(!v.history)v.history=[];
+  v.history.push({t:new Date().toISOString(),kind:'編集'});
+  p.visits.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  saveAll(data);
+  editingKey=null;             // 編集終了（カードは開いたまま）
+  renderCharts();
+}
+
+function loadToForm(pid){
+  const p=findPt(pid); if(!p)return;
+  const v=p.visits.at(-1);
+  document.getElementById('p_id').value=p.pid;
+  document.getElementById('p_name').value=p.name||'';
+  document.getElementById('p_date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('p_resv').value='';
+  document.getElementById('p_arr').value='';
+  document.getElementById('q_chief').value=v.chief||'';
+  document.getElementById('q_hist').value=v.hist||'';
+  document.getElementById('q_tx').value=v.treatment?('前回：'+v.treatment):'';
+  document.getElementById('q_after').value=v.after?('前回の予定：'+v.after):'';
+  document.getElementById('q_memo').value='';
+  setMatchInfo(`登録済み患者：No.${p.pid}「${p.name||'氏名未登録'}」（来院 ${p.visits.length}回）`);
+  alert(`No.${pid} を入力欄に呼び出しました。新しい来院記録として続けて入力・保存できます。`);
+  go('intake');
+}
+
+/* ============================================================
+   印刷 / PDF（患者単位）
+   ============================================================ */
+function printPatient(pid){
+  const p=findPt(pid); if(!p)return;
+  const w=window.open('','_blank');
+  const rows=p.visits.map(v=>`
+    <div style="border:1px solid #ccc;border-radius:8px;padding:10px 12px;margin:8px 0;page-break-inside:avoid">
+      <div style="font-weight:700;color:#7a5c3e">📅 ${fmtDate(v.date)}</div>
+      ${(v.resvTime||v.arrTime)?`<p><b>予約／来院：</b>${esc(v.resvTime||'-')} ／ ${esc(v.arrTime||'-')}</p>`:''}
+      ${v.chief?`<p><b>主訴：</b>${esc(v.chief)}</p>`:''}
+      ${v.hist?`<p><b>経過：</b>${esc(v.hist)}</p>`:''}
+      ${v.symptoms.length?`<p><b>症状：</b>${v.symptoms.join('・')}</p>`:''}
+      <p><b>弁証：</b>${v.patterns.map(x=>`${x.name}(${x.pct}%)`).join('、')||'記録なし'}</p>
+      ${v.findings.length?`<p><b>陽性所見：</b>${v.findings.join('、')}</p>`:''}
+      ${v.treatment?`<p style="white-space:pre-wrap"><b>治療内容：</b>${esc(v.treatment)}</p>`:''}
+      ${v.after?`<p style="white-space:pre-wrap"><b>施術後・次回予定：</b>${esc(v.after)}</p>`:''}
+      ${v.memo?`<p style="white-space:pre-wrap"><b>メモ：</b>${esc(v.memo)}</p>`:''}
+      ${(v.history&&v.history.length)?`<p style="font-size:10px;color:#999;margin-top:6px">${v.history.map(hh=>fmtStamp(hh.t,hh.kind)).filter(Boolean).join('、')}</p>`:''}
+    </div>`).join('');
+  w.document.write(`<html><head><meta charset="utf-8"><title>カルテ No.${esc(pid)}</title>
+    <style>body{font-family:"Yu Gothic",Meiryo,sans-serif;color:#2c2620;padding:24px;line-height:1.6}
+    h1{font-size:18px;border-bottom:2px solid #7a5c3e;padding-bottom:6px}
+    p{margin:3px 0;font-size:13px}</style></head><body>
+    <h1>東洋医学 カルテ ／ No.${esc(pid)} ${esc(p.name||'')}</h1>
+    <p style="font-size:11px;color:#888">来院記録 ${p.visits.length}件 ／ 出力日 ${new Date().toLocaleDateString('ja-JP')}</p>
+    ${rows}
+    <p style="font-size:10px;color:#aaa;margin-top:20px">※ 本記録は鑑別支援ツールによる候補であり確定診断ではありません。</p>
+    </body></html>`);
+  w.document.close(); w.focus(); setTimeout(()=>w.print(),300);
+}
+
+/* ============================================================
+   患者配布用 問診表（空欄の記入用紙を印刷/PDF）
+   ============================================================ */
+function printIntakeForm(){
+  const w=window.open('','_blank');
+  // 症状チェックリスト（既存マスタを流用、徒手検査用の部位も「痛む場所」として活用）
+  const symBlocks=SYMPTOM_GROUPS.map(g=>{
+    const items=g.items.map(([k,l])=>`<label class="c"><span class="box"></span>${l}</label>`).join('');
+    return `<div class="sym-grp"><div class="sgh">${g.g.replace('(徒手検査用)','').replace('(分かれば)','').replace('・婦人','')}</div><div class="sym-list">${items}</div></div>`;
+  }).join('');
+
+  w.document.write(`<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
+  <title>問診表</title>
+  <style>
+    *{box-sizing:border-box}
+    body{font-family:"Yu Gothic",Meiryo,sans-serif;color:#222;line-height:1.7;margin:0;padding:14mm 12mm}
+    h1{font-size:20px;text-align:center;margin:0 0 2px;letter-spacing:.1em}
+    .sub{text-align:center;font-size:11px;color:#666;margin:0 0 12px}
+    .sec-t{font-weight:700;font-size:13px;background:#f0ece3;border-left:4px solid #7a5c3e;
+      padding:5px 9px;margin:14px 0 8px}
+    .row{display:flex;flex-wrap:wrap;gap:6px 18px;margin:4px 0}
+    .f{display:flex;align-items:flex-end;gap:6px;font-size:12.5px;margin:5px 0}
+    .f .lbl{white-space:nowrap;color:#444}
+    .f .line{flex:1;border-bottom:1px solid #999;min-width:60px;height:20px}
+    .f.short .line{max-width:120px;flex:none;width:120px}
+    .f.mid .line{flex:none;width:230px}
+    .checkrow{font-size:12.5px;margin:5px 0}
+    .checkrow .box{display:inline-block;width:13px;height:13px;border:1.3px solid #555;
+      border-radius:3px;margin-right:5px;vertical-align:-2px}
+    .checkrow label{margin-right:20px;white-space:nowrap}
+    .sym-grp{margin:7px 0}
+    .sgh{font-weight:700;font-size:12px;color:#7a5c3e;margin:0 0 3px}
+    .sym-list{display:grid;grid-template-columns:repeat(3,1fr);gap:2px 10px}
+    .sym-list .c{font-size:11.5px;display:flex;align-items:center}
+    .sym-list .box{display:inline-block;width:11px;height:11px;border:1.2px solid #666;
+      border-radius:2px;margin-right:5px;flex:none}
+    .free-box{border:1px solid #999;border-radius:5px;min-height:46px;margin-top:4px}
+    .note{font-size:10px;color:#888;margin-top:16px;border-top:1px solid #ddd;padding-top:6px}
+    .pain-fig{font-size:11.5px;color:#444}
+    @media print{body{padding:10mm}}
+  </style></head><body>
+  <h1>問 診 表</h1>
+  <p class="sub">ご来院ありがとうございます。分かる範囲でご記入ください。記入が難しい項目は空欄で構いません。</p>
+
+  <div class="sec-t">基本情報（記入日：　　　年　　月　　日）</div>
+  <div class="f"><span class="lbl">フリガナ</span><span class="line"></span></div>
+  <div class="f"><span class="lbl">お名前</span><span class="line"></span>
+    <span class="lbl">性別</span><span style="font-size:12px">男 ・ 女</span></div>
+  <div class="row">
+    <div class="f short"><span class="lbl">生年月日</span><span class="line"></span></div>
+    <div class="f short"><span class="lbl">年齢</span><span class="line"></span><span class="lbl">歳</span></div>
+  </div>
+  <div class="f"><span class="lbl">ご住所　〒</span><span class="line"></span></div>
+  <div class="f"><span class="line"></span></div>
+  <div class="row">
+    <div class="f mid"><span class="lbl">電話番号</span><span class="line"></span></div>
+    <div class="f mid"><span class="lbl">ご職業</span><span class="line"></span></div>
+  </div>
+
+  <div class="sec-t">今回つらい症状について</div>
+  <div class="f"><span class="lbl">一番つらい症状（主訴）</span><span class="line"></span></div>
+  <div class="checkrow"><b>いつ頃から：</b>
+    <label><span class="box"></span>今日</label>
+    <label><span class="box"></span>2〜3日前</label>
+    <label><span class="box"></span>1週間ほど前</label>
+    <label><span class="box"></span>1ヶ月以上前</label>
+    （具体的に：　　　　　　　　　）</div>
+  <div class="checkrow"><b>きっかけ：</b>
+    <label><span class="box"></span>急に</label>
+    <label><span class="box"></span>徐々に</label>
+    <label><span class="box"></span>けが・事故</label>
+    <label><span class="box"></span>思い当たらない</label></div>
+  <div class="checkrow"><b>痛みの程度（今）：</b>　弱い 0 ー 1 ー 2 ー 3 ー 4 ー 5 ー 6 ー 7 ー 8 ー 9 ー 10 強い</div>
+  <div class="checkrow"><b>どんな時につらい：</b>
+    <label><span class="box"></span>朝</label>
+    <label><span class="box"></span>夜</label>
+    <label><span class="box"></span>動かすと</label>
+    <label><span class="box"></span>じっとして</label>
+    <label><span class="box"></span>冷えると</label>
+    <label><span class="box"></span>温めると</label></div>
+
+  <div class="sec-t">痛む場所・気になる場所（あてはまるものに ✔）</div>
+  <div class="pain-fig checkrow">
+    <label><span class="box"></span>首・肩</label>
+    <label><span class="box"></span>肩関節</label>
+    <label><span class="box"></span>肘</label>
+    <label><span class="box"></span>手首・指</label>
+    <label><span class="box"></span>腰</label>
+    <label><span class="box"></span>股関節・おしり</label>
+    <label><span class="box"></span>膝</label>
+    <label><span class="box"></span>足のしびれ</label>
+    <label><span class="box"></span>頭</label>
+    <label><span class="box"></span>おなか</label>
+    <label><span class="box"></span>その他（　　　　　）</label></div>
+
+  <div class="sec-t">体の状態（あてはまるものに ✔。たくさんでも構いません）</div>
+  ${symBlocks}
+
+  <div class="sec-t">既往・服薬など</div>
+  <div class="checkrow"><b>現在治療中の病気：</b>
+    <label><span class="box"></span>なし</label>
+    <label><span class="box"></span>あり →（　　　　　　　　　　　　　）</label></div>
+  <div class="checkrow"><b>服用中の薬：</b>
+    <label><span class="box"></span>なし</label>
+    <label><span class="box"></span>あり →（　　　　　　　　　　　　　）</label></div>
+  <div class="checkrow"><b>アレルギー：</b>
+    <label><span class="box"></span>なし</label>
+    <label><span class="box"></span>あり →（　　　　　　　　　　　　　）</label>
+    <label style="margin-left:6px"><span class="box"></span>妊娠中・可能性</label></div>
+  <div style="font-size:12px;margin-top:6px">その他、伝えておきたいこと：</div>
+  <div class="free-box"></div>
+
+  <p class="note">※ いただいた情報は施術の参考にのみ使用し、適切に管理します。記入内容は確定診断ではありません。</p>
+  </body></html>`);
+  w.document.close(); w.focus(); setTimeout(()=>w.print(),300);
+}
+function download(filename,text,type){
+  const blob=new Blob([text],{type});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
+}
+function exportJSON(){
+  const data=loadAll();
+  if(!data.length){alert('保存されたカルテがありません。');return;}
+  download(`カルテ_backup_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(data,null,2),'application/json');
+}
+
+/* 来院記録の同一判定キー：vidがあればvid、無ければ来院日+作成時刻で代用 */
+function visitKey(v){ return v.vid || ('legacy:'+(v.date||'')+'|'+(v.savedAt||'')); }
+/* 記録の更新時刻（最後の履歴 or savedAt）を比較用に取得 */
+function visitTime(v){
+  if(v.history&&v.history.length){
+    const last=v.history[v.history.length-1].t;
+    if(last) return new Date(last).getTime()||0;
+  }
+  return v.savedAt? (new Date(v.savedAt).getTime()||0) : 0;
+}
+
+function importJSON(ev){
+  const file=ev.target.files[0]; if(!file)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const imp=JSON.parse(r.result);
+      if(!Array.isArray(imp))throw 0;
+      const data=loadAll();
+      let added=0, updated=0;
+      imp.forEach(ip=>{
+        const ex=data.find(p=>normId(p.pid)===normId(ip.pid));
+        if(ex){
+          // 既存の来院記録をキーで索引化
+          const idx=new Map();
+          ex.visits.forEach((v,i)=>idx.set(visitKey(v),i));
+          (ip.visits||[]).forEach(iv=>{
+            const k=visitKey(iv);
+            if(idx.has(k)){
+              // 同一記録 → 履歴が新しい方を採用
+              const i=idx.get(k);
+              if(visitTime(iv) > visitTime(ex.visits[i])){ ex.visits[i]=iv; updated++; }
+            }else{
+              ex.visits.push(iv); idx.set(k,ex.visits.length-1); added++;
+            }
+          });
+          ex.visits.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+          if(ip.name)ex.name=ip.name; // 氏名は取り込み側で更新
+        }else{ data.push(ip); added+=(ip.visits||[]).length; }
+      });
+      saveAll(data); refreshDatalists(); renderCharts();
+      alert(`読込完了：${imp.length}名分をマージしました。\n新規追加 ${added}件 ／ 更新 ${updated}件`);
+    }catch(e){alert('読込に失敗しました。JSONファイルを確認してください。');}
+  };
+  r.readAsText(file); ev.target.value='';
+}
+function exportCSV(){
+  const data=loadAll();
+  if(!data.length){alert('保存されたカルテがありません。');return;}
+  const head=['患者番号','氏名','来院日','曜日','予約時間','来院時間','主訴','症状','弁証(上位)','陽性所見','治療内容','施術後・次回予定','メモ'];
+  const rows=[head];
+  data.forEach(p=>p.visits.forEach(v=>{
+    const wd=(()=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(v.date||'');if(!m)return'';const dt=new Date(+m[1],+m[2]-1,+m[3]);return isNaN(dt)?'':WD[dt.getDay()];})();
+    rows.push([p.pid,p.name||'',v.date,wd,v.resvTime||'',v.arrTime||'',v.chief||'',v.symptoms.join('・'),
+      v.patterns.map(x=>`${x.name}(${x.pct}%)`).join('；'),v.findings.join('；'),v.treatment||'',v.after||'',v.memo||'']);
+  }));
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  download(`カルテ_${new Date().toISOString().slice(0,10)}.csv`,'\uFEFF'+csv,'text/csv');
+}
+
+/* ============================================================
+   タブ
+   ============================================================ */
+/* 表示順（タブの並び）。名前で管理する */
+const TAB_ORDER=['intake','symptom','test','diag','chart'];
+function go(target){
+  // 数値が来た場合は表示順インデックスとして解釈（後方互換）
+  const name = (typeof target==='number') ? TAB_ORDER[target] : target;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.name===name));
+  document.querySelectorAll('section').forEach(s=>s.classList.toggle('show',s.dataset.name===name));
+  if(name==='chart')renderCharts();
+  if(name==='intake')refreshDatalists();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>go(t.dataset.name)));
+
+buildSymptoms();
+document.getElementById('p_date').value=new Date().toISOString().slice(0,10);
+refreshDatalists();
+</script>
+</body>
+</html>

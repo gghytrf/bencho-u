@@ -1,0 +1,13 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.vscode/
+.idea/
+
+# backups exported from the app (do not commit patient data)
+*.json
+!package.json
+カルテ_*.csv
+カルテ_*.json
