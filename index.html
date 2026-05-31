@@ -126,10 +126,32 @@
   .info{background:var(--hi);border:1px solid var(--line);border-radius:10px;padding:10px 13px;font-size:.8rem;color:var(--sub);margin-bottom:12px}
   .info b{color:var(--accent)}
   .pill{display:inline-block;background:var(--chip);border-radius:20px;padding:3px 11px;font-size:.76rem;color:var(--accent);margin:2px 4px 2px 0}
+  /* 使い方モーダル */
+  .modal{display:none;position:fixed;inset:0;background:rgba(40,32,24,.55);z-index:1000;
+    padding:20px;overflow-y:auto}
+  .modal.show{display:flex;align-items:flex-start;justify-content:center}
+  .modal-box{background:var(--panel);border-radius:14px;max-width:680px;width:100%;
+    margin:auto;box-shadow:0 10px 40px rgba(0,0,0,.3);overflow:hidden}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;
+    background:var(--accent);color:#fff;padding:13px 18px;font-weight:700;font-size:1.02rem;
+    position:sticky;top:0}
+  .modal-close{background:transparent;border:none;color:#fff;font-size:1.1rem;cursor:pointer;padding:2px 6px}
+  .modal-body{padding:16px 20px 22px;max-height:78vh;overflow-y:auto}
+  .modal-body h3{font-size:.98rem;color:var(--accent);margin:18px 0 6px;
+    padding-left:8px;border-left:4px solid var(--accent2)}
+  .modal-body h3:first-of-type{margin-top:8px}
+  .modal-body p{font-size:.86rem;margin:6px 0}
+  .modal-body ul{margin:6px 0 6px;padding-left:1.2em}
+  .modal-body li{font-size:.84rem;margin:4px 0}
+  .modal-body b{color:var(--accent)}
+  .help-note{background:var(--hi);border:1px solid var(--line);border-radius:9px;
+    padding:9px 12px;font-size:.8rem!important;color:var(--sub)}
+  .help-note b{color:var(--accent)}
+  .modal-foot{margin-top:18px;text-align:center}
   @media(max-width:520px){.qs{grid-template-columns:1fr 1fr}.pt-row{grid-template-columns:1fr}}
   /* 印刷 */
   @media print{
-    .tabs,.bar,.toolbar,.disclaimer,footer,.no-print{display:none!important}
+    .tabs,.bar,.toolbar,.disclaimer,footer,.no-print,.modal{display:none!important}
     section{display:block!important;border:none;box-shadow:none;page-break-inside:avoid}
     body{background:#fff}
   }
@@ -181,6 +203,7 @@
     <button class="btn-primary" onclick="go('symptom')">症状入力へ →</button>
     <button class="btn-ghost" onclick="newChart()">新規カルテ（入力クリア）</button>
     <button class="btn-ghost" onclick="printIntakeForm()">🖨 患者用問診表を印刷/PDF</button>
+    <button class="btn-ghost" onclick="openHelp()">📖 使い方</button>
   </div>
   <p class="h2sub" style="margin-top:8px">「患者用問診表」は患者さんに記入していただく空欄の用紙を印刷・PDF出力します（この入力欄とは別物です）。</p>
 </section>
@@ -257,6 +280,67 @@
 </section>
 
 <footer>東洋医学 弁証支援アプリ ／ 学習・臨床補助用途。診断・治療の最終判断は施術者が行ってください。</footer>
+</div>
+
+<!-- ============ 使い方モーダル ============ -->
+<div id="helpModal" class="modal" onclick="if(event.target===this)closeHelp()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span>📖 アプリの使い方</span>
+      <button class="modal-close" onclick="closeHelp()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="help-note">本アプリは学習・臨床補助のための<b>鑑別支援ツール</b>です。表示される弁証・治療穴・検査は候補であり、確定診断ではありません。最終的な判断は施術者ご自身が行ってください。</p>
+
+      <h3>全体の流れ</h3>
+      <p>上部のタブを左から順に進めます。<b>① 問診 → ② 症状 → ③ 徒手検査 → ④ 弁証 → ⑤ カルテ</b>。各タブのボタンで前後に移動できます。</p>
+
+      <h3>① 問診</h3>
+      <p>患者番号・氏名・来院日・予約/来院時間・主訴などを入力します。</p>
+      <ul>
+        <li><b>患者番号</b>は同一患者の記録をまとめるキーです。全角「１２３」と半角「123」は同じものとして扱われます。<b>必須</b>です。</li>
+        <li><b>氏名</b>も必須です。空白の有無や全角/半角は区別されません（「山田 太郎」＝「山田　太郎」＝「山田太郎」）。</li>
+        <li>患者番号を入れると登録済みの氏名が自動表示され、氏名を入れると患者番号が自動表示されます（同名が複数いる場合は候補番号を案内）。</li>
+        <li><b>🖨 患者用問診表を印刷/PDF</b>：患者さんに記入してもらう空欄の問診票を出力します。アプリの入力欄とは別物です。</li>
+        <li><b>新規カルテ（入力クリア）</b>：入力欄をすべて空にして新しい患者の入力を始めます。</li>
+      </ul>
+
+      <h3>② 症状</h3>
+      <p>該当する症状にチェックします。チェックが多いほど弁証の精度が上がります。「痛みの部位」を選ぶと、次の徒手検査でその部位のテストが提示されます。</p>
+
+      <h3>③ 徒手検査</h3>
+      <p>選んだ部位に応じた整形外科テストと判定フロー（A症状→テスト→陽性/陰性→疑われる病態）が表示されます。実施して陽性だったテストにチェックすると、カルテに所見として記録されます。<b>所見・経過メモ</b>欄に、検査所見や放散の様子などを書けます。</p>
+
+      <h3>④ 弁証</h3>
+      <p>入力した症状から、可能性の高い証が合致度の高い順に表示されます。各証に治法と<b>治療穴</b>が出て、補（緑）・瀉（赤）・平補平瀉（茶）で色分けされます。部位症状からは経絡弁証（関連経絡と局所穴）も別枠で出ます。</p>
+      <ul>
+        <li><b>↻ 弁証を再計算</b>：症状を変更した後に押すと結果を更新します。</li>
+        <li><b>治療内容</b>：実際に行った処置（経穴・鍼の規格・刺入深度・補瀉・置鍼時間・灸の壮数など）を記入します。</li>
+        <li><b>施術後の様子・次回の予定</b>：施術後の反応や次回方針を記入します。</li>
+        <li><b>💾 このカルテを保存</b>：ここまでの内容を1回分の来院記録としてカルテに保存します。</li>
+      </ul>
+
+      <h3>⑤ カルテ</h3>
+      <p>保存したカルテを患者番号・氏名で検索できます。同じ患者番号は来院日順（時系列）にまとまります。患者カードを開くと各回の記録が並びます。</p>
+      <ul>
+        <li><b>✎ この記録を編集</b>：その来院記録を直せます。保存すると編集履歴（作成・編集の日時）が記録されます。</li>
+        <li><b>🖨 このカルテを印刷/PDF</b>：その患者の全来院記録を印刷・PDF出力します。</li>
+        <li><b>📋 直近を入力欄に呼出</b>：前回の内容を問診欄に呼び戻し、再診の記録を続けて入力できます。</li>
+        <li><b>⬇ バックアップ(JSON)</b>：全カルテをファイルに書き出します。</li>
+        <li><b>⬆ 読込(JSON)</b>：バックアップファイルを取り込みます。既存データに統合（マージ）され、消えません。同じ記録は編集日時が新しい方が採用されます。</li>
+        <li><b>CSV出力</b>：全カルテを表計算ソフト用に書き出します。</li>
+      </ul>
+
+      <h3>データの保存と注意</h3>
+      <p>カルテはこのページを開いたブラウザの中（localStorage）に保存され、外部には送信されません。保存はブラウザ単位なので、別のブラウザ・別の端末とは共有されません。</p>
+      <ul>
+        <li>ブラウザの「サイトデータ削除」を行うとカルテも消えます。</li>
+        <li>大切なデータは定期的に<b>⬇ バックアップ(JSON)</b>で書き出し、別の場所（クラウドやUSBなど）に保管してください。万一消えても<b>⬆ 読込(JSON)</b>で復元でき、別端末への移行もできます。</li>
+      </ul>
+
+      <div class="modal-foot"><button class="btn-primary" onclick="closeHelp()">閉じる</button></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1075,6 +1159,13 @@ function go(target){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>go(t.dataset.name)));
+
+/* ============================================================
+   使い方モーダル
+   ============================================================ */
+function openHelp(){document.getElementById('helpModal').classList.add('show');}
+function closeHelp(){document.getElementById('helpModal').classList.remove('show');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeHelp();});
 
 buildSymptoms();
 document.getElementById('p_date').value=new Date().toISOString().slice(0,10);
