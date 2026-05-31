@@ -36,6 +36,31 @@
 
 `index.html` をブラウザで開くだけで動作します。
 
+## PWA（ホーム画面に追加・オフライン対応）
+
+このアプリは PWA に対応しています。GitHub Pages など **HTTPS の URL** で公開すると有効になります。
+
+- **ホーム画面に追加**：スマホ/タブレットのブラウザで開き、共有メニューなどから「ホーム画面に追加」を選ぶと、アプリのように全画面で起動できます。
+- **オフライン対応**：一度オンラインで開けば、以降は通信がなくても起動・利用できます（カルテはもともとブラウザ内に保存されるため、オフラインでも閲覧・入力・保存が可能です）。
+
+### PWA に必要なファイル
+
+- `manifest.json` … アプリ情報（同梱済み）
+- `sw.js` … オフライン用 Service Worker（同梱済み）
+- `version.json` … バージョン情報（同梱済み）
+- `icon-192.png`（192×192px）… **各自で用意**
+- `icon-512.png`（512×512px）… **各自で用意**
+
+アイコン2点を `index.html` と同じ階層（リポジトリのルート）に置いてください。正方形の PNG 画像を推奨します。
+
+### アプリを更新したとき
+
+`index.html` を変更して push するだけで完了します。`version.json` を手で書き換える必要はありません。
+
+GitHub Actions（`.github/workflows/update-version.yml`）が、`index.html`・`sw.js`・`manifest.json` のいずれかが push されると、その内容から `version.json` を自動更新します（バージョン例：`2026.06.10-a1b2c3d`）。利用者はアプリ画面ヘッダの **「🔄 更新確認」** ボタンを押すと、新しいバージョンがあれば自動でキャッシュを入れ替えて最新版に切り替わります。
+
+> GitHub Actions を使うには、リポジトリの **Settings → Actions → General → Workflow permissions** で「Read and write permissions」を有効にしてください（version.json を自動コミットするため）。
+
 ## ライセンス
 
 このリポジトリの `LICENSE` を参照してください。

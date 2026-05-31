@@ -1,0 +1,48 @@
+name: バージョン自動更新
+
+# index.html などの主要ファイルが push されたら version.json を自動更新する
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'index.html'
+      - 'sw.js'
+      - 'manifest.json'
+
+# version.json をコミットし返すための書き込み権限
+permissions:
+  contents: write
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v4
+
+      - name: version.json を生成
+        run: |
+          # 日付（東京時間）＋ index.html の内容ハッシュ先頭7文字でバージョンを作る
+          DATE=$(TZ=Asia/Tokyo date +'%Y.%m.%d')
+          HASH=$(sha256sum index.html | cut -c1-7)
+          VERSION="${DATE}-${HASH}"
+          cat > version.json <<EOF
+          {
+            "version": "${VERSION}",
+            "note": "index.html の push 時に GitHub Actions が自動生成"
+          }
+          EOF
+          echo "生成したバージョン: ${VERSION}"
+
+      - name: 変更があればコミット
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # 変更が無ければ何もしない（無限ループ防止）
+          if git diff --quiet version.json; then
+            echo "version.json に変更なし。スキップします。"
+          else
+            git add version.json
+            git commit -m "chore: version.json を自動更新 [skip ci]"
+            git push
+          fi

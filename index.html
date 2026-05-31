@@ -7,6 +7,8 @@
 <meta name="theme-color" content="#7a5c3e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="弁証支援">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <title>東洋医学 弁証支援アプリ</title>
 <style>
   :root{
@@ -22,6 +24,10 @@
   header{padding:20px 0 10px;border-bottom:2px solid var(--accent)}
   h1{font-size:1.35rem;margin:0;letter-spacing:.04em}
   .lead{color:var(--sub);font-size:.86rem;margin:6px 0 0}
+  .ver-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:.78rem;color:var(--sub)}
+  .ver-row #verStatus{font-weight:600}
+  .ver-row .ok{color:var(--neg)}
+  .ver-row .new{color:var(--pos)}
   .disclaimer{background:var(--hi);border:1px solid var(--line);border-radius:10px;
     padding:10px 14px;font-size:.8rem;color:var(--sub);margin:14px 0}
   .tabs{display:flex;gap:6px;margin:18px 0 14px;flex-wrap:wrap}
@@ -162,6 +168,11 @@
 <header>
   <h1>東洋医学 弁証支援アプリ</h1>
   <p class="lead">問診 → 症状入力 → 弁証鑑別 → 治療穴 → 徒手検査 → カルテ保存・検索</p>
+  <div class="ver-row">
+    <span id="verLabel">バージョン: 読み込み中…</span>
+    <button class="btn-ghost mini" onclick="checkUpdate()">🔄 更新確認</button>
+    <span id="verStatus"></span>
+  </div>
 </header>
 
 <div class="disclaimer">
@@ -1170,6 +1181,72 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeHelp();});
 buildSymptoms();
 document.getElementById('p_date').value=new Date().toISOString().slice(0,10);
 refreshDatalists();
+
+/* ============================================================
+   PWA：Service Worker 登録＋バージョン管理＋更新確認
+   ============================================================ */
+let APP_VERSION=null;   // 現在動作中のバージョン（起動時に確定）
+
+// version.json を読む（キャッシュを避けて最新を取得）
+async function fetchVersion(){
+  try{
+    const res=await fetch('./version.json?ts='+Date.now(),{cache:'no-store'});
+    const data=await res.json();
+    return data.version||null;
+  }catch(e){ return null; }
+}
+
+// 起動時：現在のバージョンを表示として確定
+async function initVersion(){
+  const v=await fetchVersion();
+  APP_VERSION=v;
+  const label=document.getElementById('verLabel');
+  if(label) label.textContent='バージョン: '+(v||'不明');
+}
+
+// 「更新確認」ボタン
+async function checkUpdate(){
+  const status=document.getElementById('verStatus');
+  if(status){status.className='';status.textContent='確認中…';}
+  const latest=await fetchVersion();
+  if(!latest){
+    if(status){status.textContent='確認できませんでした（オフラインの可能性）。';}
+    return;
+  }
+  if(APP_VERSION && latest!==APP_VERSION){
+    // 新版あり → SWにキャッシュ更新を指示
+    if(status){status.className='new';status.textContent=`新しいバージョン（${latest}）があります。更新します…`;}
+    if('serviceWorker' in navigator && navigator.serviceWorker.controller){
+      navigator.serviceWorker.controller.postMessage({type:'UPDATE_NOW'});
+      // 完了通知を待ってリロード（保険で数秒後にもリロード）
+      setTimeout(()=>window.location.reload(), 3000);
+    }else{
+      // SW未対応環境はそのまま再読込
+      setTimeout(()=>window.location.reload(), 800);
+    }
+  }else{
+    if(status){status.className='ok';status.textContent='最新版です。';}
+  }
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').catch(err=>{
+      console.log('Service Worker 登録に失敗:',err);
+    });
+  });
+  // SWからの更新完了通知でリロード
+  navigator.serviceWorker.addEventListener('message',e=>{
+    if(e.data && e.data.type==='UPDATED'){ window.location.reload(); }
+  });
+  // 新しいSWに切り替わったら一度だけ自動リロード
+  let reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(reloaded)return; reloaded=true; window.location.reload();
+  });
+}
+
+initVersion();
 </script>
 </body>
 </html>
