@@ -93,6 +93,12 @@
   .tnode .tname{font-weight:600}
   .tnode .desc{color:var(--sub);font-size:.79rem;margin:2px 0 0}
   .tnode label.chk{margin-top:4px;display:inline-flex}
+  .pn-row{gap:14px;margin:6px 0 2px 4px;align-items:center}
+  .pn-row.pn-show{display:flex}
+  .pn-opt{display:inline-flex;align-items:center;gap:5px;font-size:.84rem;cursor:pointer;
+    padding:4px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .pn-opt input{accent-color:var(--accent)}
+  label.donechk.on{background:var(--hi);border-color:var(--accent)}
   .branch{margin:8px 0 8px 6px;padding-left:12px;border-left:2px solid var(--line)}
   .arrow{color:var(--accent);font-weight:700;margin:0 4px}
   .tag-pos{color:var(--pos);font-weight:700}
@@ -327,7 +333,7 @@
       <p>該当する症状にチェックします。チェックが多いほど弁証の精度が上がります。「痛みの部位」を選ぶと、次の徒手検査でその部位のテストが提示されます。</p>
 
       <h3>③ 徒手検査</h3>
-      <p>選んだ部位に応じた整形外科テストと判定フロー（A症状→テスト→陽性/陰性→疑われる病態）が表示されます。実施して陽性だったテストにチェックすると、カルテに所見として記録されます。<b>所見・経過メモ</b>欄に、検査所見や放散の様子などを書けます。</p>
+      <p>選んだ部位に応じた整形外科テストと判定フロー（A症状→テスト→陽性/陰性→疑われる病態）が表示されます。各テストは<b>「実施した」にチェックを入れると陽性／陰性の選択肢が出ます</b>。実施したテストだけが「テスト名：陽性/陰性」の形でカルテに記録されます。<b>所見・経過メモ</b>欄に、放散の様子などを補足で書けます。痛みの有無に関わらず行う<b>機能評価（神経・可動域・循環・姿勢）</b>も同じ方式で記録できます。</p>
 
       <h3>④ 弁証</h3>
       <p>入力した症状から、可能性の高い証が合致度の高い順に表示されます。各証に治法と<b>治療穴</b>が出て、補（緑）・瀉（赤）・平補平瀉（茶）で色分けされます。部位症状からは経絡弁証（関連経絡と局所穴）も別枠で出ます。</p>
@@ -854,6 +860,29 @@ function toTests(){
   go('test');
 }
 
+/* テスト1項目のHTML（実施チェック → 陽性/陰性ラジオが出現）
+   grp はラジオのname衝突を防ぐためのプレフィックス、idx は連番 */
+function testNodeHTML(t, grp, idx){
+  const nm = grp+'_'+idx;          // ラジオのグループ名（テストごとに独立）
+  const tn = esc(t.name);
+  return `<div class="tnode">
+    <span class="tname">・${t.name}</span><div class="desc">${t.desc}</div>
+    <label class="chk donechk" style="margin-top:5px">
+      <input type="checkbox" class="donechk-in" data-test="${tn}" data-radio="${nm}"
+        onchange="onDoneToggle(this)"><span>実施した</span></label>
+    <div class="pn-row" id="pn_${nm}" style="display:none">
+      <label class="pn-opt"><input type="radio" name="${nm}" value="陽性"><span class="tag-pos">陽性</span></label>
+      <label class="pn-opt"><input type="radio" name="${nm}" value="陰性"><span class="tag-neg">陰性</span></label>
+    </div>
+  </div>`;
+}
+
+function onDoneToggle(cb){
+  cb.closest('label').classList.toggle('on', cb.checked);
+  const row=document.getElementById('pn_'+cb.dataset.radio);
+  if(row) row.style.display = cb.checked ? 'flex' : 'none';
+}
+
 function buildTests(checked){
   const area=document.getElementById('testArea');
   const flows=TEST_FLOWS.filter(f=>checked.has(f.trig));
@@ -862,26 +891,30 @@ function buildTests(checked){
     return;
   }
   area.innerHTML=flows.map((f,idx)=>{
-    const tests=f.tests.map(t=>
-      `<div class="tnode"><span class="tname">・${t.name}</span><div class="desc">${t.desc}</div>
-        <label class="chk" style="margin-top:5px"><input type="checkbox" class="findchk" data-test="${t.name}"
-          onchange="this.closest('label').classList.toggle('on',this.checked)"><span>このテスト陽性</span></label></div>`).join('');
+    const tests=f.tests.map((t,ti)=>testNodeHTML(t, 'o_'+f.trig, ti)).join('');
     const branch=f.branch.map(b=>
       `<div class="branch"><span class="arrow">→</span>${b.cond}<div class="concl"><b>結論候補：</b>${b.concl}</div></div>`).join('');
     return `<div class="test-flow ${idx===0?'open':''}">
       <div class="tf-head" onclick="this.parentElement.classList.toggle('open')">
         <span>${LABELMAP[f.trig]} ＜${f.title}＞</span><span class="reg">${f.region} ▾</span></div>
       <div class="tf-body">
-        <div style="font-weight:700;font-size:.84rem;margin-bottom:4px">A症状 → 行うテスト（陽性所見にチェック）</div>
+        <div style="font-weight:700;font-size:.84rem;margin-bottom:4px">行うテスト（実施したら✔→陽性/陰性を選択）</div>
         ${tests}
         <div style="font-weight:700;font-size:.84rem;margin:10px 0 2px">判定の分岐</div>
         ${branch}</div></div>`;
   }).join('');
 }
+
+/* 実施したテストのみ「テスト名：陽性/陰性」で記録する */
 function getFindings(){
-  const ortho=[...document.querySelectorAll('.findchk:checked')].map(i=>i.dataset.test);
-  const func=[...document.querySelectorAll('.funcchk:checked')].map(i=>i.dataset.test);
-  return ortho.concat(func);
+  const result=[];
+  document.querySelectorAll('.donechk-in:checked').forEach(cb=>{
+    const name=cb.dataset.test;
+    const radio=document.querySelector('input[name="'+cb.dataset.radio+'"]:checked');
+    const judge=radio?radio.value:'未判定';
+    result.push(name+'：'+judge);
+  });
+  return result;
 }
 
 /* 機能評価（痛み以外）を描画。常に表示する。 */
@@ -889,17 +922,14 @@ function buildFuncTests(){
   const area=document.getElementById('funcArea');
   if(!area)return;
   area.innerHTML=FUNC_TESTS.map(f=>{
-    const tests=f.tests.map(t=>
-      `<div class="tnode"><span class="tname">・${t.name}</span><div class="desc">${t.desc}</div>
-        <label class="chk" style="margin-top:5px"><input type="checkbox" class="funcchk" data-test="${esc(t.name)}"
-          onchange="this.closest('label').classList.toggle('on',this.checked)"><span>所見あり（陽性・異常）</span></label></div>`).join('');
+    const tests=f.tests.map((t,ti)=>testNodeHTML(t, 'f_'+f.cat, ti)).join('');
     const branch=f.branch.map(b=>
       `<div class="branch"><span class="arrow">→</span>${b.cond}<div class="concl"><b>解釈：</b>${b.concl}</div></div>`).join('');
     return `<div class="test-flow">
       <div class="tf-head" onclick="this.parentElement.classList.toggle('open')">
         <span>${f.title}</span><span class="reg">${f.note} ▾</span></div>
       <div class="tf-body">
-        <div style="font-weight:700;font-size:.84rem;margin-bottom:4px">検査項目（所見ありにチェック）</div>
+        <div style="font-weight:700;font-size:.84rem;margin-bottom:4px">検査項目（実施したら✔→陽性/陰性を選択）</div>
         ${tests}
         <div style="font-weight:700;font-size:.84rem;margin:10px 0 2px">解釈の目安</div>
         ${branch}</div></div>`;
@@ -997,7 +1027,7 @@ function renderCharts(){
         </div></div>`;
       }
       const pat=v.patterns.map(x=>`<span class="pill">${x.name} ${x.pct}%</span>`).join('')||'<span class="pdate">（弁証記録なし）</span>';
-      const find=v.findings.length?`<div class="vline"><b>陽性所見：</b>${v.findings.join('、')}</div>`:'';
+      const find=v.findings.length?`<div class="vline"><b>検査所見：</b>${v.findings.join('、')}</div>`:'';
       const sym=v.symptoms.length?`<div class="vline"><b>症状：</b>${v.symptoms.join('・')}</div>`:'';
       const time=(v.resvTime||v.arrTime)?`<div class="vline"><b>予約／来院：</b>${esc(v.resvTime||'-')} ／ ${esc(v.arrTime||'-')}</div>`:'';
       const tx=v.treatment?`<div class="vline"><b>治療内容：</b><span class="pre">${esc(v.treatment)}</span></div>`:'';
@@ -1187,7 +1217,7 @@ function printPatient(pid){
       ${v.hist?`<p><b>経過：</b>${esc(v.hist)}</p>`:''}
       ${v.symptoms.length?`<p><b>症状：</b>${v.symptoms.join('・')}</p>`:''}
       <p><b>弁証：</b>${v.patterns.map(x=>`${x.name}(${x.pct}%)`).join('、')||'記録なし'}</p>
-      ${v.findings.length?`<p><b>陽性所見：</b>${v.findings.join('、')}</p>`:''}
+      ${v.findings.length?`<p><b>検査所見：</b>${v.findings.join('、')}</p>`:''}
       ${v.treatment?`<p style="white-space:pre-wrap"><b>治療内容：</b>${esc(v.treatment)}</p>`:''}
       ${v.after?`<p style="white-space:pre-wrap"><b>施術後・次回予定：</b>${esc(v.after)}</p>`:''}
       ${v.memo?`<p style="white-space:pre-wrap"><b>メモ：</b>${esc(v.memo)}</p>`:''}
@@ -1380,7 +1410,7 @@ function importJSON(ev){
 function exportCSV(){
   const data=loadAll();
   if(!data.length){alert('保存されたカルテがありません。');return;}
-  const head=['患者番号','氏名','来院日','曜日','予約時間','来院時間','主訴','症状','弁証(上位)','陽性所見','治療内容','施術後・次回予定','メモ'];
+  const head=['患者番号','氏名','来院日','曜日','予約時間','来院時間','主訴','症状','弁証(上位)','検査所見','治療内容','施術後・次回予定','メモ'];
   const rows=[head];
   data.forEach(p=>p.visits.forEach(v=>{
     const wd=(()=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(v.date||'');if(!m)return'';const dt=new Date(+m[1],+m[2]-1,+m[3]);return isNaN(dt)?'':WD[dt.getDay()];})();

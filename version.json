@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.01-b",
+  "version": "2026.06.01-c",
   "note": "更新時はこの version を変えるだけ。GitHub Actions では index.html の push で自動更新されます。"
 }
