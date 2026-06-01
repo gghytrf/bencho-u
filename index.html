@@ -265,9 +265,16 @@
   <h2>③ 徒手検査フロー</h2>
   <p class="h2sub">入力した部位から行うべき整形外科テストと判定の流れを提示します。実施した所見にチェックすると、カルテに記録されます。</p>
   <div id="testArea"><p class="empty">先に症状入力で痛みの部位を選んでください。</p></div>
+
+  <div style="margin:22px 0 6px;font-weight:700;color:var(--accent);font-size:.96rem;border-top:2px solid var(--line);padding-top:16px">
+    機能評価（痛み以外）
+  </div>
+  <p class="h2sub" style="margin:0 0 8px">痛みの有無に関わらず実施できる検査です。必要なカテゴリを開いて、該当する所見にチェックしてください（任意）。</p>
+  <div id="funcArea"></div>
+
   <div class="free" style="margin-top:14px">
     <div class="gh" style="font-weight:700;margin-bottom:6px">所見・経過メモ（任意）</div>
-    <textarea id="q_memo" placeholder="例：SLR右70°陽性。L5領域に放散。"></textarea>
+    <textarea id="q_memo" placeholder="例：SLR右70°陽性。L5領域に放散。アキレス腱反射 右減弱。"></textarea>
   </div>
   <div class="bar">
     <button class="btn-primary" onclick="analyze()">弁証へ →</button>
@@ -405,10 +412,12 @@ const SYMPTOM_GROUPS = [
     ["pulse_rapid","脈が速い"],["pulse_wiry","脈が張る(弦)"],["pulse_slip","脈が滑(なめらか)"],
   ]},
   {g:"痛みの部位(徒手検査用)", items:[
-    ["pain_neck","首・肩のこり/痛み"],["pain_shoulder","肩関節の痛み・挙上制限"],
-    ["pain_elbow","肘の痛み"],["pain_wrist","手首・指のしびれ/痛み"],
-    ["pain_lowback","腰痛"],["pain_hip","股関節・殿部の痛み"],
-    ["pain_knee","膝の痛み"],["pain_leg_numb","下肢のしびれ・放散痛"],
+    ["pain_neck","首・頸部の痛み/しびれ"],["pain_shoulder","肩関節の痛み・挙上制限"],
+    ["pain_elbow","肘の痛み"],["pain_wrist","手首・手指の痛み/しびれ"],
+    ["pain_tos","腕〜手のしびれ・だるさ(胸郭出口)"],["pain_thorax","胸・肋骨・背部の痛み"],
+    ["pain_lowback","腰の痛み"],["pain_si","仙腸関節・殿部の痛み"],
+    ["pain_hip","股関節・鼡径部の痛み"],["pain_knee","膝の痛み"],
+    ["pain_ankle","足首・足部の痛み"],["pain_leg_numb","下肢のしびれ・放散痛"],
   ]},
 ];
 
@@ -474,91 +483,287 @@ const PATTERNS = [
 const MERIDIAN = {
   pain_neck:{m:"督脈・足太陽膀胱経・手少陽三焦経",tx:[{p:"風池",m:"sha"},{p:"天柱",m:"sha"},{p:"肩井",m:"sha"},{p:"後渓",m:"sha"}]},
   pain_shoulder:{m:"手陽明大腸経・手太陽小腸経",tx:[{p:"肩髃",m:"hei"},{p:"肩髎",m:"hei"},{p:"臑兪",m:"sha"},{p:"曲池",m:"hei"}]},
+  pain_elbow:{m:"手陽明大腸経・手太陰肺経",tx:[{p:"曲池",m:"hei"},{p:"手三里",m:"hei"},{p:"尺沢",m:"sha"},{p:"少海",m:"hei"}]},
+  pain_wrist:{m:"手陽明大腸経・手厥陰心包経",tx:[{p:"陽渓",m:"hei"},{p:"大陵",m:"hei"},{p:"内関",m:"hei"},{p:"合谷",m:"sha"}]},
+  pain_tos:{m:"手太陰肺経・手少陰心経",tx:[{p:"中府",m:"sha"},{p:"極泉",m:"sha"},{p:"缺盆",m:"hei"},{p:"肩井",m:"sha"}]},
+  pain_thorax:{m:"足厥陰肝経・足少陽胆経",tx:[{p:"期門",m:"sha"},{p:"章門",m:"sha"},{p:"陽陵泉",m:"sha"},{p:"支溝",m:"sha"}]},
   pain_lowback:{m:"足太陽膀胱経・督脈",tx:[{p:"腎兪",m:"hei"},{p:"大腸兪",m:"hei"},{p:"委中",m:"sha"},{p:"腰陽関",m:"hei"}]},
+  pain_si:{m:"足太陽膀胱経・督脈",tx:[{p:"次髎",m:"hei"},{p:"上髎",m:"hei"},{p:"小腸兪",m:"hei"},{p:"委中",m:"sha"}]},
+  pain_hip:{m:"足少陽胆経・足陽明胃経",tx:[{p:"環跳",m:"sha"},{p:"居髎",m:"hei"},{p:"髀関",m:"hei"},{p:"風市",m:"sha"}]},
   pain_knee:{m:"足陽明胃経・足太陰脾経",tx:[{p:"内膝眼",m:"hei"},{p:"犢鼻",m:"hei"},{p:"陽陵泉",m:"hei"},{p:"梁丘",m:"hei"}]},
+  pain_ankle:{m:"足太陽膀胱経・足少陽胆経",tx:[{p:"崑崙",m:"hei"},{p:"丘墟",m:"hei"},{p:"解渓",m:"hei"},{p:"申脈",m:"hei"}]},
   pain_leg_numb:{m:"足太陽膀胱経・足少陽胆経",tx:[{p:"環跳",m:"sha"},{p:"委中",m:"sha"},{p:"承山",m:"sha"},{p:"陽陵泉",m:"sha"}]},
 };
 
 const TEST_FLOWS = [
-  {trig:"pain_neck", region:"頸部・上肢", title:"頸部痛・上肢症状",
+  {trig:"pain_neck", region:"頸部", title:"頸部痛・上肢への放散",
    tests:[
-    {id:"spurling",name:"Spurlingテスト(椎間孔圧迫)", desc:"頭部を患側へ側屈・伸展し軸圧を加える"},
+    {id:"spurling",name:"Spurlingテスト", desc:"頭部を患側へ側屈・伸展し軸圧を加える（椎間孔圧迫）"},
     {id:"jackson",name:"Jacksonテスト", desc:"頭部を後屈させ軸圧を加える"},
+    {id:"distraction",name:"頸椎牽引テスト", desc:"頭部を上方へ牽引。症状が軽減すれば陽性"},
+    {id:"lhermitte",name:"Lhermitte徴候", desc:"頸部前屈で背骨〜四肢に電撃様のしびれ"},
+    {id:"eden_neck",name:"棘突起・傍脊柱の圧痛", desc:"頸椎棘突起や筋の圧痛・硬結を触診"},
    ],
    branch:[
-    {cond:"Spurling <span class='tag-pos'>陽性</span>（上肢に放散痛）", concl:"頸椎症性神経根症 / 椎間孔狭窄の可能性"},
-    {cond:"両テスト <span class='tag-neg'>陰性</span>・こり主体", concl:"筋筋膜性頸部痛・緊張型の可能性（経絡弁証へ）"},
+    {cond:"Spurling/Jackson <span class='tag-pos'>陽性</span>（上肢に放散）", concl:"頸椎症性神経根症・椎間孔狭窄の可能性"},
+    {cond:"牽引テストで軽減", concl:"神経根の圧迫性病変を示唆"},
+    {cond:"Lhermitte <span class='tag-pos'>陽性</span>", concl:"頸髄症・脊髄病変の可能性（要医療連携）"},
+    {cond:"圧痛主体・神経テスト <span class='tag-neg'>陰性</span>", concl:"筋筋膜性頸部痛・緊張型の可能性（経絡弁証へ）"},
    ]},
+
   {trig:"pain_shoulder", region:"肩関節", title:"肩関節痛・挙上制限",
    tests:[
     {id:"arc",name:"Painful arc(有痛弧)", desc:"外転60〜120°で痛み"},
-    {id:"emptycan",name:"Empty can(SSP)テスト", desc:"内旋位で挙上に抵抗"},
-    {id:"droparm",name:"Drop armテスト", desc:"挙上位から自力でゆっくり下ろせるか"},
+    {id:"emptycan",name:"Empty can(SSP/棘上筋)", desc:"内旋位で挙上に抵抗"},
+    {id:"fullcan",name:"Full can", desc:"母指上向きで挙上に抵抗（棘上筋）"},
+    {id:"droparm",name:"Drop armテスト", desc:"挙上位から自力でゆっくり下ろせるか（腱板断裂）"},
+    {id:"ext_rot",name:"外旋抵抗テスト(ISP/棘下筋)", desc:"肘90°で外旋に抵抗"},
+    {id:"liftoff",name:"Lift-offテスト(肩甲下筋)", desc:"手を背に当て後方へ押し出す"},
+    {id:"hawkins",name:"Hawkins-Kennedy", desc:"90°屈曲位で内旋（インピンジメント）"},
+    {id:"neer",name:"Neerテスト", desc:"他動的に挙上しインピンジを誘発"},
+    {id:"speed",name:"Speedテスト(上腕二頭筋長頭)", desc:"前腕回外・肘伸展位で前方挙上に抵抗"},
+    {id:"obrien",name:"O'brienテスト(SLAP)", desc:"内旋位と外旋位で抵抗時痛を比較"},
+    {id:"apprehension",name:"Apprehension(不安感)", desc:"外転外旋で脱臼不安感（前方不安定）"},
    ],
    branch:[
-    {cond:"Painful arc <span class='tag-pos'>陽性</span> ＋ Empty can <span class='tag-pos'>陽性</span>", concl:"棘上筋腱炎・腱板損傷の可能性"},
+    {cond:"Painful arc ＋ Empty/Full can <span class='tag-pos'>陽性</span>", concl:"棘上筋腱炎・腱板損傷の可能性"},
+    {cond:"外旋抵抗 <span class='tag-pos'>陽性</span>", concl:"棘下筋（外旋筋）の損傷を示唆"},
+    {cond:"Lift-off <span class='tag-pos'>陽性</span>", concl:"肩甲下筋（内旋筋）の損傷を示唆"},
     {cond:"Drop arm <span class='tag-pos'>陽性</span>", concl:"腱板断裂の可能性（要医療連携）"},
+    {cond:"Hawkins/Neer <span class='tag-pos'>陽性</span>", concl:"肩峰下インピンジメント症候群の可能性"},
+    {cond:"Speed/O'brien <span class='tag-pos'>陽性</span>", concl:"上腕二頭筋長頭腱炎・SLAP損傷の可能性"},
+    {cond:"Apprehension <span class='tag-pos'>陽性</span>", concl:"肩関節（前方）不安定症の可能性"},
     {cond:"全方向の他動制限 ＋ テスト <span class='tag-neg'>陰性</span>", concl:"凍結肩(五十肩)の可能性"},
    ]},
+
   {trig:"pain_elbow", region:"肘", title:"肘の痛み",
    tests:[
     {id:"thomsen",name:"Thomsenテスト", desc:"手関節背屈に抵抗（外側上顆）"},
-    {id:"midfinger",name:"中指伸展テスト", desc:"中指伸展に抵抗"},
+    {id:"chair",name:"Chairテスト", desc:"椅子を片手で持ち上げ外側上顆の痛み"},
+    {id:"midfinger",name:"中指伸展テスト", desc:"中指伸展に抵抗（外側上顆）"},
+    {id:"golfer",name:"内側上顆ストレス", desc:"前腕回外・手関節掌屈に抵抗（内側上顆）"},
+    {id:"elbow_valgus",name:"外反ストレステスト", desc:"肘軽度屈曲で外反力（内側側副靱帯）"},
+    {id:"tinel_elbow",name:"肘部Tinel徴候", desc:"肘部管を叩打（尺骨神経）"},
    ],
    branch:[
-    {cond:"外側で <span class='tag-pos'>陽性</span>", concl:"上腕骨外側上顆炎(テニス肘)の可能性"},
-    {cond:"内側で誘発", concl:"内側上顆炎(ゴルフ肘)の可能性"},
+    {cond:"Thomsen/Chair/中指伸展 <span class='tag-pos'>陽性</span>", concl:"上腕骨外側上顆炎(テニス肘)の可能性"},
+    {cond:"内側上顆ストレス <span class='tag-pos'>陽性</span>", concl:"上腕骨内側上顆炎(ゴルフ肘)の可能性"},
+    {cond:"外反ストレス <span class='tag-pos'>陽性</span>", concl:"内側側副靱帯損傷の可能性"},
+    {cond:"肘部Tinel <span class='tag-pos'>陽性</span>（小指側しびれ）", concl:"肘部管症候群（尺骨神経障害）の可能性"},
    ]},
-  {trig:"pain_wrist", region:"手首・手指", title:"手首・指のしびれ/痛み",
+
+  {trig:"pain_wrist", region:"手・手関節", title:"手首・手指の痛み/しびれ",
    tests:[
-    {id:"phalen",name:"Phalenテスト", desc:"手関節を最大屈曲し1分保持"},
-    {id:"tinel",name:"Tinel徴候", desc:"手根管部を叩打"},
-    {id:"finkel",name:"Finkelsteinテスト", desc:"母指を握り尺屈"},
+    {id:"phalen",name:"Phalenテスト", desc:"手関節を最大掌屈し1分保持（正中神経）"},
+    {id:"tinel_wrist",name:"Tinel徴候(手根管)", desc:"手根管部を叩打"},
+    {id:"finkel",name:"Finkelsteinテスト", desc:"母指を握り尺屈（de Quervain）"},
+    {id:"grind",name:"Grindテスト(CM関節)", desc:"母指CM関節に軸圧＋回旋"},
+    {id:"tfcc",name:"TFCCストレス(尺屈圧迫)", desc:"尺屈位で軸圧。尺側手関節の痛み"},
+    {id:"allen",name:"Allenテスト", desc:"橈骨・尺骨動脈の血流確認"},
    ],
    branch:[
-    {cond:"Phalen/Tinel <span class='tag-pos'>陽性</span>（正中神経領域のしびれ）", concl:"手根管症候群の可能性"},
+    {cond:"Phalen/Tinel(手根管) <span class='tag-pos'>陽性</span>", concl:"手根管症候群（正中神経）の可能性"},
     {cond:"Finkelstein <span class='tag-pos'>陽性</span>", concl:"de Quervain腱鞘炎の可能性"},
+    {cond:"Grind <span class='tag-pos'>陽性</span>", concl:"母指CM関節症の可能性"},
+    {cond:"TFCCストレス <span class='tag-pos'>陽性</span>（尺側痛）", concl:"TFCC損傷の可能性"},
    ]},
-  {trig:"pain_lowback", region:"腰部", title:"腰痛",
+
+  {trig:"pain_tos", region:"胸郭出口", title:"腕〜手のしびれ・だるさ",
    tests:[
-    {id:"slr",name:"SLR(下肢伸展挙上)", desc:"仰臥位で下肢を挙上、70°以下で放散痛"},
-    {id:"kemp",name:"Kempテスト", desc:"立位で後屈＋側屈・回旋"},
-    {id:"patrick",name:"Patrick(FABER)テスト", desc:"股関節を屈曲外転外旋"},
+    {id:"wright",name:"Wrightテスト", desc:"肩外転外旋で橈骨動脈拍動減弱・症状再現"},
+    {id:"roos",name:"Roosテスト(EAST)", desc:"両腕90°外転で3分間グーパー反復"},
+    {id:"adson",name:"Adsonテスト", desc:"頸部を患側へ回旋・吸気保持で拍動減弱"},
+    {id:"eden",name:"Edenテスト(肋鎖)", desc:"肩を後下方へ引き拍動減弱"},
+    {id:"morley",name:"Morleyテスト", desc:"鎖骨上窩（腕神経叢）を圧迫し放散"},
    ],
    branch:[
-    {cond:"SLR <span class='tag-pos'>陽性</span>（下肢へ放散）", concl:"腰椎椎間板ヘルニア・坐骨神経痛の可能性"},
-    {cond:"Kemp <span class='tag-pos'>陽性</span>・後屈で増悪", concl:"椎間関節性・脊柱管狭窄の可能性"},
-    {cond:"Patrick <span class='tag-pos'>陽性</span>", concl:"仙腸関節・股関節由来の可能性"},
+    {cond:"Roos/Wright <span class='tag-pos'>陽性</span>（症状再現）", concl:"胸郭出口症候群の可能性"},
+    {cond:"Adson/Eden <span class='tag-pos'>陽性</span>", concl:"血管性（斜角筋・肋鎖間）圧迫の可能性"},
+    {cond:"Morley <span class='tag-pos'>陽性</span>", concl:"神経性（腕神経叢）圧迫を示唆"},
+   ]},
+
+  {trig:"pain_thorax", region:"胸郭・肋骨・背部", title:"胸・肋骨・背部の痛み",
+   tests:[
+    {id:"rib_compress",name:"胸郭圧迫テスト", desc:"前後または側方から胸郭を圧迫し痛みの部位を特定"},
+    {id:"rib_spring",name:"肋骨スプリング", desc:"各肋骨を弾発的に押し可動性・痛みを確認"},
+    {id:"adam",name:"Adams前屈テスト", desc:"前屈で肋骨隆起・側弯の有無"},
+    {id:"thoracic_rot",name:"胸椎回旋可動", desc:"座位で体幹回旋。左右差・痛み"},
+   ],
+   branch:[
+    {cond:"肋骨圧迫で限局性の鋭い痛み", concl:"肋骨・肋軟骨の損傷や肋間神経痛の可能性（外傷時は要医療連携）"},
+    {cond:"肋骨スプリングで可動性低下・痛み", concl:"肋椎・肋横突関節の機能障害の可能性"},
+    {cond:"胸椎回旋で限局痛・左右差", concl:"胸椎椎間関節性の痛みの可能性（経絡弁証へ）"},
+   ]},
+
+  {trig:"pain_lowback", region:"腰部", title:"腰の痛み",
+   tests:[
+    {id:"slr",name:"SLR(下肢伸展挙上)", desc:"仰臥位で下肢挙上、70°以下で下肢へ放散"},
+    {id:"bragard",name:"Bragard徴候", desc:"SLR陽性肢を少し下げ足背屈で再現"},
+    {id:"kemp",name:"Kempテスト", desc:"立位で後屈＋側屈・回旋"},
+    {id:"fnst_lb",name:"大腿神経伸展(FNST)", desc:"腹臥位で膝屈曲（L2-4）"},
+    {id:"ext_load",name:"伸展負荷テスト", desc:"後屈保持で下肢症状（脊柱管狭窄）"},
+   ],
+   branch:[
+    {cond:"SLR/Bragard <span class='tag-pos'>陽性</span>（下肢へ放散）", concl:"腰椎椎間板ヘルニア・坐骨神経痛(L4-S1)の可能性"},
+    {cond:"FNST <span class='tag-pos'>陽性</span>", concl:"上位腰椎(L2-4)神経根症の可能性"},
+    {cond:"Kemp/伸展負荷 <span class='tag-pos'>陽性</span>・後屈で増悪", concl:"椎間関節性・腰部脊柱管狭窄の可能性"},
     {cond:"全テスト <span class='tag-neg'>陰性</span>", concl:"筋筋膜性腰痛の可能性（経絡弁証へ）"},
    ]},
-  {trig:"pain_hip", region:"股関節・殿部", title:"股関節・殿部痛",
+
+  {trig:"pain_si", region:"仙腸関節", title:"仙腸関節・殿部の痛み",
    tests:[
-    {id:"patrick2",name:"Patrick(FABER)テスト", desc:"屈曲外転外旋で誘発"},
-    {id:"freiberg",name:"Freibergテスト", desc:"股関節内旋で殿部痛（梨状筋）"},
+    {id:"patrick_si",name:"Patrick(FABER)", desc:"屈曲外転外旋で仙腸関節・股関節を誘発"},
+    {id:"gaenslen",name:"Gaenslenテスト", desc:"片膝抱え反対脚を台から下垂し伸展"},
+    {id:"thigh_thrust",name:"Thigh thrust", desc:"股関節90°屈曲位で大腿軸方向に圧迫"},
+    {id:"compression_si",name:"仙腸関節圧迫", desc:"側臥位で腸骨を下方圧迫"},
+    {id:"newton",name:"Newtonテスト", desc:"仙骨を直接圧迫し誘発"},
    ],
    branch:[
-    {cond:"Patrick <span class='tag-pos'>陽性</span>（鼡径部痛）", concl:"股関節症・仙腸関節障害の可能性"},
-    {cond:"Freiberg <span class='tag-pos'>陽性</span>（殿部〜下肢痛）", concl:"梨状筋症候群の可能性"},
+    {cond:"Thigh thrust/Gaenslen など複数 <span class='tag-pos'>陽性</span>", concl:"仙腸関節障害の可能性（3つ以上陽性で確度が上がる）"},
+    {cond:"Patrick <span class='tag-pos'>陽性</span>（鼡径部痛）", concl:"股関節由来の可能性も鑑別"},
    ]},
+
+  {trig:"pain_hip", region:"股関節・鼡径部", title:"股関節・鼡径部の痛み",
+   tests:[
+    {id:"patrick_hip",name:"Patrick(FABER)", desc:"屈曲外転外旋で鼡径部痛"},
+    {id:"fadir",name:"FADIRテスト", desc:"屈曲内転内旋（前方インピンジ/FAI）"},
+    {id:"thomas",name:"Thomasテスト", desc:"対側股を抱え患側大腿が浮く（腸腰筋拘縮）"},
+    {id:"trendelenburg",name:"Trendelenburg徴候", desc:"片脚立位で対側骨盤が下降（中殿筋）"},
+    {id:"ober",name:"Oberテスト", desc:"側臥位で腸脛靱帯の短縮を評価"},
+    {id:"freiberg_hip",name:"Freibergテスト", desc:"股関節内旋で殿部痛（梨状筋）"},
+   ],
+   branch:[
+    {cond:"FADIR <span class='tag-pos'>陽性</span>", concl:"股関節インピンジメント(FAI)・関節唇損傷の可能性"},
+    {cond:"Patrick <span class='tag-pos'>陽性</span>・荷重時痛", concl:"変形性股関節症の可能性"},
+    {cond:"Trendelenburg <span class='tag-pos'>陽性</span>", concl:"中殿筋筋力低下・股関節病変を示唆"},
+    {cond:"Freiberg <span class='tag-pos'>陽性</span>（殿部〜下肢痛）", concl:"梨状筋症候群の可能性"},
+    {cond:"Thomas/Ober <span class='tag-pos'>陽性</span>", concl:"腸腰筋・腸脛靱帯の拘縮を示唆"},
+   ]},
+
   {trig:"pain_knee", region:"膝", title:"膝の痛み",
    tests:[
     {id:"mcmurray",name:"McMurrayテスト", desc:"屈曲位から回旋伸展（半月板）"},
-    {id:"adt",name:"前方引き出しテスト", desc:"脛骨を前方へ（ACL）"},
-    {id:"varus",name:"内外反ストレステスト", desc:"側方動揺（側副靱帯）"},
+    {id:"thessaly",name:"Thessalyテスト", desc:"片脚立位で膝20°屈曲し体幹回旋（半月板）"},
+    {id:"adt_knee",name:"前方引き出し", desc:"脛骨を前方へ（前十字靱帯ACL）"},
+    {id:"lachman",name:"Lachmanテスト", desc:"膝20〜30°屈曲で脛骨前方移動（ACL）"},
+    {id:"pdt_knee",name:"後方引き出し", desc:"脛骨を後方へ（後十字靱帯PCL）"},
+    {id:"valgus_knee",name:"外反ストレス", desc:"膝軽度屈曲で外反（内側側副靱帯MCL）"},
+    {id:"varus_knee",name:"内反ストレス", desc:"膝軽度屈曲で内反（外側側副靱帯LCL）"},
+    {id:"patella_grind",name:"膝蓋骨圧迫(Clarke)", desc:"膝蓋骨を押さえ大腿四頭筋収縮"},
+    {id:"patella_appr",name:"膝蓋骨不安感テスト", desc:"膝蓋骨を外方へ押し不安感（脱臼）"},
    ],
    branch:[
-    {cond:"McMurray <span class='tag-pos'>陽性</span>（クリック・痛み）", concl:"半月板損傷の可能性"},
-    {cond:"前方引き出し <span class='tag-pos'>陽性</span>", concl:"前十字靱帯損傷の可能性（要医療連携）"},
-    {cond:"加齢・荷重時痛・テスト <span class='tag-neg'>陰性</span>", concl:"変形性膝関節症の可能性"},
+    {cond:"McMurray/Thessaly <span class='tag-pos'>陽性</span>（クリック・痛み）", concl:"半月板損傷の可能性"},
+    {cond:"Lachman/前方引き出し <span class='tag-pos'>陽性</span>", concl:"前十字靱帯(ACL)損傷の可能性（要医療連携）"},
+    {cond:"後方引き出し <span class='tag-pos'>陽性</span>", concl:"後十字靱帯(PCL)損傷の可能性"},
+    {cond:"外反/内反ストレス <span class='tag-pos'>陽性</span>", concl:"側副靱帯(MCL/LCL)損傷の可能性"},
+    {cond:"膝蓋骨圧迫 <span class='tag-pos'>陽性</span>", concl:"膝蓋大腿関節症・膝蓋軟骨障害の可能性"},
+    {cond:"加齢・荷重時痛・靱帯テスト <span class='tag-neg'>陰性</span>", concl:"変形性膝関節症の可能性"},
    ]},
-  {trig:"pain_leg_numb", region:"下肢", title:"下肢のしびれ・放散痛",
+
+  {trig:"pain_ankle", region:"足関節・足部", title:"足首・足部の痛み",
+   tests:[
+    {id:"ant_drawer_ankle",name:"前方引き出し(足関節)", desc:"踵を前方へ引く（前距腓靱帯ATFL）"},
+    {id:"talar_tilt",name:"内反ストレス(距骨傾斜)", desc:"踵を内反（外側靱帯）"},
+    {id:"thompson",name:"Thompsonテスト", desc:"腹臥位で下腿三頭筋を握る（アキレス腱断裂）"},
+    {id:"squeeze",name:"Squeezeテスト", desc:"下腿を圧迫し遠位脛腓間の痛み（高位捻挫）"},
+    {id:"windlass",name:"Windlassテスト", desc:"母趾背屈で足底腱膜の痛み"},
+    {id:"mulder",name:"Mulderクリック", desc:"中足骨頭を横から圧迫（モートン病）"},
+   ],
+   branch:[
+    {cond:"前方引き出し/内反ストレス <span class='tag-pos'>陽性</span>", concl:"足関節外側靱帯損傷（捻挫）の可能性"},
+    {cond:"Thompson <span class='tag-pos'>陽性</span>（足が底屈しない）", concl:"アキレス腱断裂の可能性（要医療連携）"},
+    {cond:"Squeeze <span class='tag-pos'>陽性</span>", concl:"脛腓靱帯結合損傷（高位捻挫）の可能性"},
+    {cond:"Windlass <span class='tag-pos'>陽性</span>（踵〜土踏まず）", concl:"足底腱膜炎の可能性"},
+    {cond:"Mulder <span class='tag-pos'>陽性</span>（趾間のしびれ）", concl:"モートン病の可能性"},
+   ]},
+
+  {trig:"pain_leg_numb", region:"下肢(神経)", title:"下肢のしびれ・放散痛",
    tests:[
     {id:"slr2",name:"SLRテスト", desc:"L4-S1神経根の評価"},
-    {id:"fnst",name:"大腿神経伸展テスト(FNST)", desc:"腹臥位で膝屈曲（L2-4）"},
+    {id:"fnst2",name:"大腿神経伸展(FNST)", desc:"腹臥位で膝屈曲（L2-4）"},
+    {id:"slump",name:"Slumpテスト", desc:"座位で体幹・頸部屈曲＋膝伸展（神経の滑走）"},
+    {id:"piriformis",name:"梨状筋テスト(FAIR)", desc:"屈曲内転内旋で殿部〜下肢の放散"},
    ],
    branch:[
-    {cond:"SLR <span class='tag-pos'>陽性</span>", concl:"L4-S1神経根症・坐骨神経痛の可能性"},
+    {cond:"SLR/Slump <span class='tag-pos'>陽性</span>", concl:"L4-S1神経根症・坐骨神経痛の可能性"},
     {cond:"FNST <span class='tag-pos'>陽性</span>", concl:"上位腰椎(L2-4)神経根症の可能性"},
+    {cond:"梨状筋テスト <span class='tag-pos'>陽性</span>・SLR陰性", concl:"梨状筋症候群（絞扼）の可能性"},
+   ]},
+];
+
+/* ============================================================
+   機能評価（痛み以外）：神経・可動域・循環・姿勢など
+   痛みの部位選択に関わらず常に表示する。各項目を実施所見としてチェック・記録。
+   ============================================================ */
+const FUNC_TESTS = [
+  {cat:"neuro", title:"神経学的検査", note:"反射・筋力・感覚・病的反射で神経機能をみる",
+   tests:[
+    {id:"dtr_biceps",name:"上腕二頭筋反射(C5-6)", desc:"亢進/減弱を左右比較"},
+    {id:"dtr_triceps",name:"上腕三頭筋反射(C7)", desc:"亢進/減弱を左右比較"},
+    {id:"dtr_patella",name:"膝蓋腱反射(L3-4)", desc:"亢進/減弱を左右比較"},
+    {id:"dtr_achilles",name:"アキレス腱反射(S1)", desc:"亢進/減弱を左右比較"},
+    {id:"mmt_upper",name:"上肢MMT(徒手筋力)", desc:"三角筋・上腕二頭/三頭・握力などを段階評価"},
+    {id:"mmt_lower",name:"下肢MMT(徒手筋力)", desc:"腸腰筋・大腿四頭・前脛骨・母趾伸展・下腿三頭"},
+    {id:"sensory_derm",name:"感覚検査(皮膚分節)", desc:"触覚・痛覚を皮膚分節ごとに左右比較"},
+    {id:"babinski",name:"Babinski反射", desc:"足底外側をこする。母趾背屈で陽性（錐体路）"},
+    {id:"hoffmann",name:"Hoffmann反射", desc:"中指を弾く。母指屈曲で陽性（上位運動ニューロン）"},
+    {id:"clonus",name:"クローヌス(足クローヌス)", desc:"急な背屈で反復性の不随意収縮（亢進）"},
+    {id:"romberg",name:"Romberg徴候", desc:"閉脚閉眼で動揺（深部感覚・平衡）"},
+   ],
+   branch:[
+    {cond:"反射減弱＋同レベルのMMT低下＋感覚低下が一致", concl:"末梢（神経根）レベルの障害を示唆。レベル特定の手がかり"},
+    {cond:"反射亢進・Babinski/Hoffmann/クローヌス <span class='tag-pos'>陽性</span>", concl:"上位運動ニューロン障害（脊髄症など）を示唆（要医療連携）"},
+    {cond:"Romberg <span class='tag-pos'>陽性</span>", concl:"深部感覚障害・前庭/小脳系の関与を示唆"},
+   ]},
+
+  {cat:"rom", title:"可動域・柔軟性", note:"関節可動域や筋短縮、動きの制限をみる",
+   tests:[
+    {id:"rom_neck",name:"頸部ROM", desc:"前後屈・側屈・回旋の角度と左右差・制限感"},
+    {id:"rom_shoulder",name:"肩関節ROM", desc:"屈曲・外転・内外旋の可動域と左右差"},
+    {id:"rom_spine_flex",name:"体幹前屈(指床間距離)", desc:"立位前屈での指先〜床の距離"},
+    {id:"rom_spine_ext",name:"体幹後屈・側屈", desc:"可動域と左右差・痛みの再現"},
+    {id:"rom_hip",name:"股関節ROM", desc:"屈曲・伸展・内外旋・外転の可動域"},
+    {id:"slr_flex",name:"SLR角度(ハムストリング柔軟性)", desc:"痛みでなく挙上角度・突っ張りをみる"},
+    {id:"thomas_func",name:"Thomasテスト(腸腰筋短縮)", desc:"対側股を抱え患側大腿が浮くか"},
+    {id:"ober_func",name:"Oberテスト(腸脛靱帯短縮)", desc:"側臥位で挙上下肢が水平以下に落ちない"},
+    {id:"ely",name:"Elyテスト(大腿直筋短縮)", desc:"腹臥位で踵を殿部へ。骨盤が浮く"},
+    {id:"heel_buttock",name:"踵殿部間距離", desc:"腹臥位で膝屈曲、踵と殿部の距離（大腿前面）"},
+    {id:"jointplay",name:"関節の遊び(joint play)", desc:"各関節の副運動・end feelを評価"},
+   ],
+   branch:[
+    {cond:"特定方向のROM制限・左右差", concl:"その関節・筋の拘縮や機能障害を示唆。治療効果の客観指標に"},
+    {cond:"Thomas/Ober/Ely <span class='tag-pos'>陽性</span>", concl:"腸腰筋・腸脛靱帯・大腿直筋の短縮を示唆"},
+   ]},
+
+  {cat:"vascular", title:"循環・血管", note:"動脈血流や血栓の疑いをみる",
+   tests:[
+    {id:"allen_func",name:"Allenテスト", desc:"橈骨・尺骨動脈を圧迫し解放、手の血流回復をみる"},
+    {id:"pulse_lower",name:"下肢動脈触知", desc:"足背動脈・後脛骨動脈の拍動を左右比較"},
+    {id:"cap_refill",name:"毛細血管再充満時間(CRT)", desc:"爪床を圧迫し色が戻るまでの時間"},
+    {id:"homans",name:"Homans徴候", desc:"足を背屈し腓腹部痛（深部静脈血栓の参考）"},
+    {id:"edema",name:"浮腫(圧痕)の確認", desc:"下腿前面を押し圧痕の有無・左右差"},
+   ],
+   branch:[
+    {cond:"動脈拍動の減弱・CRT延長", concl:"末梢動脈の血流低下を示唆（要医療連携）"},
+    {cond:"Homans <span class='tag-pos'>陽性</span>・片側性の腫脹/熱感", concl:"深部静脈血栓症の疑い。施術を避け医療機関へ（要医療連携）"},
+   ]},
+
+  {cat:"posture", title:"姿勢・アライメント・バランス", note:"立位姿勢や脚長差、バランス、歩行をみる",
+   tests:[
+    {id:"posture_std",name:"立位姿勢の観察", desc:"頭位・肩の高さ・骨盤の傾き・脊柱の弯曲"},
+    {id:"adams",name:"Adams前屈テスト", desc:"前屈で肋骨隆起・側弯の左右差"},
+    {id:"leg_length",name:"脚長差", desc:"上前腸骨棘〜内果の距離を左右比較"},
+    {id:"pelvic_tilt",name:"骨盤の傾き・回旋", desc:"ASIS/PSISの高さ・前後傾"},
+    {id:"single_leg",name:"片脚立位バランス", desc:"開眼/閉眼での保持時間・動揺"},
+    {id:"trendelenburg_func",name:"Trendelenburg徴候", desc:"片脚立位で対側骨盤が下降（中殿筋）"},
+    {id:"gait",name:"歩行観察", desc:"跛行・骨盤動揺・足の運び・左右差"},
+    {id:"shoulder_height",name:"肩・肩甲骨の高さ・位置", desc:"左右差・翼状肩甲の有無"},
+   ],
+   branch:[
+    {cond:"姿勢の偏り・脚長差・骨盤の傾き", concl:"アライメント不良・代償性の機能障害を示唆。施術方針の参考に"},
+    {cond:"片脚立位の不安定・Trendelenburg <span class='tag-pos'>陽性</span>", concl:"股関節周囲筋（中殿筋）の機能低下を示唆"},
+    {cond:"歩行の跛行・側弯", concl:"下肢・体幹の機能障害や疼痛回避を示唆"},
    ]},
 ];
 
@@ -673,7 +878,33 @@ function buildTests(checked){
         ${branch}</div></div>`;
   }).join('');
 }
-function getFindings(){return [...document.querySelectorAll('.findchk:checked')].map(i=>i.dataset.test);}
+function getFindings(){
+  const ortho=[...document.querySelectorAll('.findchk:checked')].map(i=>i.dataset.test);
+  const func=[...document.querySelectorAll('.funcchk:checked')].map(i=>i.dataset.test);
+  return ortho.concat(func);
+}
+
+/* 機能評価（痛み以外）を描画。常に表示する。 */
+function buildFuncTests(){
+  const area=document.getElementById('funcArea');
+  if(!area)return;
+  area.innerHTML=FUNC_TESTS.map(f=>{
+    const tests=f.tests.map(t=>
+      `<div class="tnode"><span class="tname">・${t.name}</span><div class="desc">${t.desc}</div>
+        <label class="chk" style="margin-top:5px"><input type="checkbox" class="funcchk" data-test="${esc(t.name)}"
+          onchange="this.closest('label').classList.toggle('on',this.checked)"><span>所見あり（陽性・異常）</span></label></div>`).join('');
+    const branch=f.branch.map(b=>
+      `<div class="branch"><span class="arrow">→</span>${b.cond}<div class="concl"><b>解釈：</b>${b.concl}</div></div>`).join('');
+    return `<div class="test-flow">
+      <div class="tf-head" onclick="this.parentElement.classList.toggle('open')">
+        <span>${f.title}</span><span class="reg">${f.note} ▾</span></div>
+      <div class="tf-body">
+        <div style="font-weight:700;font-size:.84rem;margin-bottom:4px">検査項目（所見ありにチェック）</div>
+        ${tests}
+        <div style="font-weight:700;font-size:.84rem;margin:10px 0 2px">解釈の目安</div>
+        ${branch}</div></div>`;
+  }).join('');
+}
 
 function clearAll(){document.querySelectorAll('#symptomArea input:checked').forEach(i=>{i.checked=false;i.closest('label').classList.remove('on');});}
 
@@ -684,6 +915,7 @@ function newChart(){
   clearAll(); lastResult=null;
   document.getElementById('resultArea').innerHTML='<p class="empty">症状入力後、徒手検査タブを経てここで弁証が表示されます。「再計算」でも更新できます。</p>';
   document.getElementById('testArea').innerHTML='<p class="empty">先に症状入力で痛みの部位を選んでください。</p>';
+  buildFuncTests();  // 機能評価のチェックをリセット
   go('intake');
 }
 
@@ -932,6 +1164,10 @@ function loadToForm(pid){
   document.getElementById('q_tx').value=v.treatment?('前回：'+v.treatment):'';
   document.getElementById('q_after').value=v.after?('前回の予定：'+v.after):'';
   document.getElementById('q_memo').value='';
+  clearAll(); lastResult=null;
+  document.getElementById('resultArea').innerHTML='<p class="empty">症状入力後、徒手検査タブを経てここで弁証が表示されます。「再計算」でも更新できます。</p>';
+  document.getElementById('testArea').innerHTML='<p class="empty">先に症状入力で痛みの部位を選んでください。</p>';
+  buildFuncTests();
   setMatchInfo(`登録済み患者：No.${p.pid}「${p.name||'氏名未登録'}」（来院 ${p.visits.length}回）`);
   alert(`No.${pid} を入力欄に呼び出しました。新しい来院記録として続けて入力・保存できます。`);
   go('intake');
@@ -1179,6 +1415,7 @@ function closeHelp(){document.getElementById('helpModal').classList.remove('show
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeHelp();});
 
 buildSymptoms();
+buildFuncTests();
 document.getElementById('p_date').value=new Date().toISOString().slice(0,10);
 refreshDatalists();
 
