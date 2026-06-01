@@ -1,9 +1,4 @@
 {
-<<<<<<< HEAD
-  "version": "2026.06.01-c",
-  "note": "更新時はこの version を変えるだけ。GitHub Actions では index.html の push で自動更新されます。"
-=======
-  "version": "2026.06.01-e9d3850",
+  "version": "2026.06.02-a5eaa21",
   "note": "index.html の push 時に GitHub Actions が自動生成"
->>>>>>> 4f718b20dc1d4939b2565760826e3544a18925b9
 }
