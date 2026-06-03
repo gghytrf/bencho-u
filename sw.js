@@ -82,17 +82,21 @@ self.addEventListener('message', event => {
   if (event.data && event.data.type === 'UPDATE_NOW') {
     event.waitUntil((async () => {
       const name = await currentCacheName();
+      // いったん全キャッシュを削除して取り残しを防ぐ
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+      // 新しいキャッシュを作り、キャッシュバスター付きでネットから取り直す
       const cache = await caches.open(name);
-      // 主要ファイルを最新で取り直す
+      const bust = '?_=' + Date.now();
       await Promise.all(PRECACHE.map(async u => {
         try{
-          const res = await fetch(u, {cache:'no-store'});
-          if (res && res.status === 200) await cache.put(u, res.clone());
+          const res = await fetch(u + bust, {cache:'no-store'});
+          if (res && res.status === 200) {
+            // 保存キーはバスター無しのURLにする（通常アクセスで引けるように）
+            await cache.put(u, res.clone());
+          }
         }catch(e){}
       }));
-      // 古いキャッシュを掃除
-      const keys = await caches.keys();
-      await Promise.all(keys.filter(k => k !== name).map(k => caches.delete(k)));
       // 完了をアプリに通知
       const clients = await self.clients.matchAll();
       clients.forEach(c => c.postMessage({type:'UPDATED'}));

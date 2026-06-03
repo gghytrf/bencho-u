@@ -1472,6 +1472,28 @@ async function initVersion(){
 }
 
 // 「更新確認」ボタン
+let updating=false;  // 更新処理中フラグ（リロード二重発火防止）
+
+// SWに全キャッシュ再取得を指示して最新化する共通処理
+function forceRefresh(){
+  if(updating)return; updating=true;
+  if('serviceWorker' in navigator && navigator.serviceWorker.controller){
+    navigator.serviceWorker.controller.postMessage({type:'UPDATE_NOW'});
+    // 完了通知（UPDATED）でリロード。届かない場合の保険で4秒後にも実行
+    setTimeout(()=>hardReload(), 4000);
+  }else{
+    hardReload();
+  }
+}
+
+// HTTPキャッシュも避けて再読込
+function hardReload(){
+  // キャッシュバスター付きURLで開き直し、ブラウザHTTPキャッシュも回避
+  const u=new URL(window.location.href);
+  u.searchParams.set('_', Date.now());
+  window.location.replace(u.toString());
+}
+
 async function checkUpdate(){
   const status=document.getElementById('verStatus');
   if(status){status.className='';status.textContent='確認中…';}
@@ -1481,18 +1503,12 @@ async function checkUpdate(){
     return;
   }
   if(APP_VERSION && latest!==APP_VERSION){
-    // 新版あり → SWにキャッシュ更新を指示
     if(status){status.className='new';status.textContent=`新しいバージョン（${latest}）があります。更新します…`;}
-    if('serviceWorker' in navigator && navigator.serviceWorker.controller){
-      navigator.serviceWorker.controller.postMessage({type:'UPDATE_NOW'});
-      // 完了通知を待ってリロード（保険で数秒後にもリロード）
-      setTimeout(()=>window.location.reload(), 3000);
-    }else{
-      // SW未対応環境はそのまま再読込
-      setTimeout(()=>window.location.reload(), 800);
-    }
+    forceRefresh();
   }else{
-    if(status){status.className='ok';status.textContent='最新版です。';}
+    // 同一バージョンでも、念のため最新を強制再取得して上書きする
+    if(status){status.className='ok';status.textContent='最新を再取得しています…';}
+    forceRefresh();
   }
 }
 
@@ -1502,16 +1518,26 @@ if('serviceWorker' in navigator){
       console.log('Service Worker 登録に失敗:',err);
     });
   });
-  // SWからの更新完了通知でリロード
+  // SWからの更新完了通知でリロード（HTTPキャッシュも回避）
   navigator.serviceWorker.addEventListener('message',e=>{
-    if(e.data && e.data.type==='UPDATED'){ window.location.reload(); }
+    if(e.data && e.data.type==='UPDATED'){ hardReload(); }
   });
   // 新しいSWに切り替わったら一度だけ自動リロード
-  let reloaded=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
-    if(reloaded)return; reloaded=true; window.location.reload();
+    if(updating)return; updating=true; hardReload();
   });
 }
+
+// リロード用に付けた一時パラメータ(_)をURLから消す（履歴を汚さない）
+(function cleanUrl(){
+  try{
+    const u=new URL(window.location.href);
+    if(u.searchParams.has('_')){
+      u.searchParams.delete('_');
+      history.replaceState(null,'',u.pathname+u.search+u.hash);
+    }
+  }catch(e){}
+})();
 
 initVersion();
 </script>
